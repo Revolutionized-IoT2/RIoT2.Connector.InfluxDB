@@ -1,0 +1,6 @@
+@RIoT2.Connector.InfluxDB_HostAddress = http://localhost:5277
+
+GET {{RIoT2.Connector.InfluxDB_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
