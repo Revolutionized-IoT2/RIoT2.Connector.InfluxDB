@@ -2,13 +2,17 @@
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
-    <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
     <DockerfileContext>.</DockerfileContext>
+	<InvariantGlobalization>true</InvariantGlobalization>
+	<IncludeSymbols>False</IncludeSymbols>
+	<IsPublishable>true</IsPublishable>
+	<EnableSdkContainerSupport>true</EnableSdkContainerSupport>
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="InfluxDB3.Client" Version="1.0.0" />
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.21.0" />
     <PackageReference Include="RIoT2.Core" Version="0.1.15" />
   </ItemGroup>
