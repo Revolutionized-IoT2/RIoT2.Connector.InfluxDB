@@ -56,6 +56,7 @@ namespace RIoT2.Connector.InfluxDB.Services
             }
             catch (Exception x)
             {
+                _logger.LogError(x, "Error connecting MQTT Broker");
                 throw new Exception("Could not connect to MQTT Broker", x);
             }
         }
@@ -79,8 +80,16 @@ namespace RIoT2.Connector.InfluxDB.Services
             {
                 if (MqttClient.IsMatch(mqttEventArgs.Topic, _configurationTopic))
                 {
-                    var configurationCommand = Json.Deserialize<ConfigurationCommand>(mqttEventArgs.Message);
-                    _templates.Load(configurationCommand.ApiBaseUrl);
+                    try
+                    {
+                        var configurationCommand = Json.Deserialize<ConfigurationCommand>(mqttEventArgs.Message);
+                        _templates.Load(configurationCommand.ApiBaseUrl);
+                    }
+                    catch (Exception x) 
+                    {
+                        _logger.LogError(x, "Error loading templates");
+                        throw new Exception("Error loading templates", x);
+                    }
                 }
 
                 //save reports to influxDB
@@ -107,13 +116,13 @@ namespace RIoT2.Connector.InfluxDB.Services
                         return;
                     }
                     var point = _mqttMessageHandler.HandleCommand(command);
-                    if (point != null)
+                    if (point != null) 
                         _influxDB.Write(point);
                 }
             }
             catch (Exception x)
             {
-                _logger.LogError(x, "Could not handle mqtt message {mqttEventArgs.Message}", mqttEventArgs.Message);
+                _logger.LogError(x, "Could not process mqtt message {mqttEventArgs.Message}", mqttEventArgs.Message);
             }
         }
     }
