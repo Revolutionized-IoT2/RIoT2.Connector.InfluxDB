@@ -11,7 +11,6 @@ namespace RIoT2.Connector.InfluxDB.Services
         {
             _configuration = new ConnectorConfiguration()
             {
-                ConnectorId = Environment.GetEnvironmentVariable("RIOT2_CONNECTOR_ID"),
                 HandleCommands = Environment.GetEnvironmentVariable("RIOT2_HANDLE_COMMANDS")?.ToLower() == "true",
                 InfluxHost = Environment.GetEnvironmentVariable("RIOT2_INFLUXDB_HOST"),
                 InfluxToken = Environment.GetEnvironmentVariable("RIOT2_INFLUXDB_TOKEN"),

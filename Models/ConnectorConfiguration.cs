@@ -4,7 +4,6 @@ namespace RIoT2.Connector.InfluxDB.Models
 {
     public class ConnectorConfiguration
     {
-        public string ConnectorId { get; set; }
         public bool HandleCommands { get; set; }
         public string InfluxHost { get; set; }
 

@@ -33,8 +33,8 @@ namespace RIoT2.Connector.InfluxDB.Services
 
             _reportTopic = Constants.Get("+", MqttTopic.Report);
             _commandTopic = Constants.Get("+", MqttTopic.Command);
-            _onlineTopic = Constants.Get(_connector.Configuration.ConnectorId, MqttTopic.NodeOnline);
-            _configurationTopic = Constants.Get(_connector.Configuration.ConnectorId, MqttTopic.Configuration);
+            _onlineTopic = Constants.Get(_connector.Configuration.Mqtt.ClientId, MqttTopic.NodeOnline);
+            _configurationTopic = Constants.Get(_connector.Configuration.Mqtt.ClientId, MqttTopic.Configuration);
 
             _client = new MqttClient(_connector.Configuration.Mqtt.ClientId,
                 _connector.Configuration.Mqtt.ServerUrl,
