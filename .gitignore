@@ -6,3 +6,4 @@
 /obj
 *.user
 /bin/Debug/net8.0
+/Properties/launchSettings.json
