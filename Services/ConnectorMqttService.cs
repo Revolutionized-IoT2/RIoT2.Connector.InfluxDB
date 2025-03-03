@@ -51,8 +51,10 @@ namespace RIoT2.Connector.InfluxDB.Services
         {
             try
             {
-                await _client.Start(_reportTopic, _commandTopic);
+                await _client.Start(_reportTopic, _commandTopic, _configurationTopic);
                 _client.MessageReceived += client_MessageReceived;
+                _logger.LogInformation("Connected to MQTT and listening messages");
+                await SendNodeOnlineMessage();
             }
             catch (Exception x)
             {
@@ -67,6 +69,7 @@ namespace RIoT2.Connector.InfluxDB.Services
                 IsOnline = true,
                 Name = "InfluxDBConnector"
             }));
+            _logger.LogInformation("Node Online message sent");
         }
 
         public async Task Stop()

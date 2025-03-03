@@ -12,7 +12,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="InfluxDB3.Client" Version="1.0.0" />
+    <Content Remove="Properties\launchSettings_example.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="InfluxDB.Client" Version="4.18.0" />
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.21.0" />
     <PackageReference Include="RIoT2.Core" Version="0.1.15" />
   </ItemGroup>

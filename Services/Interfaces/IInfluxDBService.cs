@@ -1,9 +1,9 @@
-﻿using InfluxDB3.Client.Write;
+﻿using InfluxDB.Client.Writes;
 
 namespace RIoT2.Connector.InfluxDB.Services.Interfaces
 {
     public interface IInfluxDBService
     {
-        Task Write(PointData data);
+        void Write(PointData data);
     }
 }

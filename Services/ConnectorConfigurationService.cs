@@ -14,7 +14,8 @@ namespace RIoT2.Connector.InfluxDB.Services
                 HandleCommands = Environment.GetEnvironmentVariable("RIOT2_HANDLE_COMMANDS")?.ToLower() == "true",
                 InfluxHost = Environment.GetEnvironmentVariable("RIOT2_INFLUXDB_HOST"),
                 InfluxToken = Environment.GetEnvironmentVariable("RIOT2_INFLUXDB_TOKEN"),
-                InfluxDatabase = Environment.GetEnvironmentVariable("RIOT2_INFLUXDB_DATABASE"),
+                InfluxBucket = Environment.GetEnvironmentVariable("RIOT2_INFLUXDB_BUCKET"),
+                InfluxOrganization = Environment.GetEnvironmentVariable("RIOT2_INFLUXDB_ORGANIZATION"),
                 Mqtt = new Core.Models.MqttConfiguration() 
                 {
                     ClientId = Environment.GetEnvironmentVariable("RIOT2_CONNECTOR_ID"),

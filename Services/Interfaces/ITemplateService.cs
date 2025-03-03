@@ -5,6 +5,7 @@ namespace RIoT2.Connector.InfluxDB.Services.Interfaces
 {
     public interface ITemplateService
     {
+        bool TemplatesLoaded { get; }
         void Load(string orchestratorBaseUrl);
         List<Template> ReportTemplates { get; }
         List<Template> CommandTemplates { get; }

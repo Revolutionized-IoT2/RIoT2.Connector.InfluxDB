@@ -9,7 +9,8 @@ namespace RIoT2.Connector.InfluxDB.Models
 
         public string InfluxToken { get; set; }
 
-        public string InfluxDatabase { get; set; }
+        public string InfluxBucket { get; set; }
+        public string InfluxOrganization { get; set; }
 
         public MqttConfiguration Mqtt { get; set; }
     }
