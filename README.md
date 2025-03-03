@@ -1,25 +1,25 @@
 # Revolutionized-IoT2: InfluxDB Connector
 
 The InfluxDB Connector ia a tool to enable data extraction from RIoT-system to InfluxDB. 
-The data can then be visualized by using the Grafana. This tutorial covers following steps:
+The data can then be visualized for instace by using the Grafana. This tutorial covers following steps:
 
-1. Install InfluxDB 2
-2. Install the connector
-3. Install and setup Grafana
+1. Installing the InfluxDB 2
+2. Installing the Connector
+3. Installing and setting Grafana
 
 > [!NOTE]  
 > This tutorial assumes that RIoT2 is already setup and is running properly 
 
 > [!NOTE]  
-> Currently the connector extracts only number and boolean data
+> Currently the connector extracts only number and boolean data. Entity data type is to be added later.
 
 
 ## 1. Installing InfluxDB 3
-The first step is to install InfluxDB 3. The recommended way is to use Docker, but any Influx intallation can be used.
+The first step is to install InfluxDB 2. The recommended way is to use Docker, but of course any Influx intallation can be used.
 InfluxDB is available for x86_64 and ARM64 architectures, debending on where you deceide to run it.
 
 
-First, Pull the image from the repo by running following command:
+Pull the image from the repo by running following command:
 
 ```
 docker pull influxdb:2-alpine
@@ -40,93 +40,39 @@ docker run \
  influxdb:2
  ```
 
- After this you can connect to influx UI with your credentials. 
+ After the container is running, you can connect to influx UI with your credentials.
 
  In UI create the token for the connector application.
 
 
 ## 2. Installing the connector
-The second step is installing the connector that will connet directly to RIoT2 MQTT and will listen any Report sent by a Node and send reported data to InfluxDB. 
+The second step is to install the connector. The connector that will will extract data directly from the MQTT and push it to InfluxDB. 
 
 Pull image from container
- ```
- todo
- ```
+```
+todo
+```
 
- Start the container with following command. Update environment variables to according your settings:
+Start the container with following command. Update environment variables to according your settings:
 
-  ```
- todo
- ```
+```
+todo
+```
 
 ## 3. Installing and settting up Grafana
 The final step is to install Grafana and set it up to visualize the data in your RIoT2 -system
 
+You follow instructions from here:
 https://grafana.com/docs/grafana/latest/setup-grafana/configure-docker/
 
-
-Pull image from the container:
-```
-docker run -d -p 3000:3000 --name=grafana \
-  --volume grafana-storage:/var/lib/grafana \
-  grafana/grafana-enterprise
-```
-
-Start the container:
- ```
- todo
- ```
-
-Update Grafana settings
+Once Grafana is running, setup influxDB as datasource by following instructions from here:
+https://grafana.com/docs/grafana/latest/datasources/influxdb/configure-influxdb-data-source/
 
 
-Connect to UI
+Visualize your data by following instructions:
+https://grafana.com/docs/grafana/latest/datasources/influxdb/configure-influxdb-data-source/
 
-
-Add InfluxDB as datasource to grafana:
-
-https://docs.influxdata.com/influxdb3/core/visualize-data/grafana/#influxdb-data-source
-
-https://grafana.com/docs/grafana/latest/datasources/#add-a-data-source
-
-Visualize your data
-
- ```
- todo -> Datamodel created by the connector
- ```
-
-
-
-
- -------------------------------
 
 ```
-##Authentication #  
-allow_anonymous false  
-password_file /mosquitto/config/password.txt  
-  
-##Listeners #  
-listener 1883 192.168.0.30  
-listener 9001 192.168.0.30  
-protocol websockets  
+todo: riot2 datamodel 
 ```
-
-> [!NOTE]  
-> The websocket protocol is required for the UI.
-
-A good guide for setting up Mosquitto broker with Docker => https://github.com/sukesh-ak/setup-mosquitto-with-docker/blob/main/README.md
-
-### 2. Setting up the Orchestrator
-Build (or pull) the orchestrator container and set it up:
-```
-docker pull ghcr.io/revolutionized-iot2/riot2-orchestrator:latest
-```
-
-Set the following container environment parameters: 
-- RIOT2_MQTT_IP - IP address for MQTT server  
-- RIOT2_MQTT_PASSWORD - MQTT password set in password.txt  
-- RIOT2_MQTT_USERNAME - MQTT username set in password.txt  
-- RIOT2_ORCHESTRATOR_ID - Unique ID for Orchestrator across the whole system. GUID is recommended 
-- RIOT2_ORCHESTRATOR_URL - Orchestrator endpoint URL. E.g. http://192.168.0.32
-- TZ - Timezone for Orchestrator. E.g. Europe/Helsinki  
- 
