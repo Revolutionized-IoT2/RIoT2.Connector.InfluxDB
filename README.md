@@ -50,13 +50,24 @@ The second step is to install the connector. The connector that will will extrac
 
 Pull image from container
 ```
-todo
+docker pull ghcr.io/revolutionized-iot2/riot2-influxdb:latest
 ```
 
 Start the container with following command. Update environment variables to according your settings:
 
 ```
-todo
+docker run -d --restart=on-failure:5 \
+ --env RIOT2_MQTT_IP=192.168.0.30 \
+ --env RIOT2_MQTT_PASSWORD=password \
+ --env RIOT2_MQTT_USERNAME=user \
+ --env RIOT2_CONNECTOR_ID=B68A6865-7B63-4EC8-AF08-3FC382C955E6 \
+ --env RIOT2_HANDLE_COMMANDS=FALSE \
+ --env RIOT2_INFLUXDB_HOST=http://192.168.0.34:8086 \
+ --env RIOT2_INFLUXDB_TOKEN=YYY \
+ --env RIOT2_INFLUXDB_BUCKET=riot-data \
+ --env RIOT2_INFLUXDB_ORGANIZATION=riot-org \
+ --env TZ=Europe/Helsinki \
+ ghcr.io/revolutionized-iot2/riot2-influxdb:latest
 ```
 
 ## 3. Installing and settting up Grafana
@@ -74,5 +85,11 @@ https://grafana.com/docs/grafana/latest/datasources/influxdb/configure-influxdb-
 
 
 ```
-todo: riot2 datamodel 
+Tags:
+    message
+    device
+    node
+    id
+    
+Fields: value
 ```
