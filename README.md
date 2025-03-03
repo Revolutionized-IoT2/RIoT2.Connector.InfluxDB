@@ -14,7 +14,7 @@ The data can then be visualized for instace by using the Grafana. This tutorial 
 > Currently the connector extracts only number and boolean data. Entity data type is to be added later.
 
 
-## 1. Installing InfluxDB 3
+## 1. Installing InfluxDB
 The first step is to install InfluxDB 2. The recommended way is to use Docker, but of course any Influx intallation can be used.
 InfluxDB is available for x86_64 and ARM64 architectures, debending on where you deceide to run it.
 
