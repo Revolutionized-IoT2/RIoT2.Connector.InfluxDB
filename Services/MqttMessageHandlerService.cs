@@ -41,7 +41,9 @@ namespace RIoT2.Connector.InfluxDB.Services
                         .Field("value", (command.Value.ToJson().Contains('.')) ? command.Value.GetValue<double>() : command.Value.GetValue<int>())
                         .Timestamp(DateTime.UtcNow, WritePrecision.Ms);
 
-                case Core.ValueType.Entity: //TODO implement later: traverse object and exctact booleans and numbers
+                case Core.ValueType.Entity:
+                    return BuildEntityPoint(template.Name, "command", template.Device, template.Node, command.Id, command.Value.GetAsObject());
+
                 default:
                     return null;
             }
@@ -82,10 +84,48 @@ namespace RIoT2.Connector.InfluxDB.Services
                         .Field("value", (report.Value.ToJson().Contains('.')) ? report.Value.GetValue<double>() : report.Value.GetValue<int>())
                         .Timestamp(DateTime.UtcNow, WritePrecision.Ms);
 
-                case Core.ValueType.Entity: //TODO implement later: traverse object and exctact booleans and numbers
+                case Core.ValueType.Entity:
+                    return BuildEntityPoint(template.Name, "report", template.Device, template.Node, report.Id, report.Value.GetAsObject());
+
                 default:
                     return null;
             }
+        }
+
+        private PointData BuildEntityPoint(string measurement, string message, string device, string node, string id, object entity)
+        {
+            var fields = EntityFlattener.Flatten(entity).ToList();
+            if (!fields.Any())
+            {
+                _logger.LogWarning("Entity {id} did not contain any boolean or number values to write", id);
+                return null;
+            }
+
+            var point = PointData.Measurement(measurement)
+                .Tag("message", message)
+                .Tag("device", device)
+                .Tag("node", node)
+                .Tag("id", id)
+                .Timestamp(DateTime.UtcNow, WritePrecision.Ms);
+
+            foreach (var (path, value) in fields)
+                point = AddField(point, path, value);
+
+            return point;
+        }
+
+        private static PointData AddField(PointData point, string field, object value)
+        {
+            return value switch
+            {
+                bool b => point.Field(field, b),
+                int i => point.Field(field, i),
+                long l => point.Field(field, l),
+                float f => point.Field(field, (double)f),
+                double d => point.Field(field, d),
+                decimal m => point.Field(field, (double)m),
+                _ => point
+            };
         }
     }
 }

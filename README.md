@@ -1,22 +1,35 @@
 # Revolutionized-IoT2: InfluxDB Connector
 
-The InfluxDB Connector ia a tool to enable data extraction from RIoT-system to InfluxDB. 
-The data can then be visualized for instace by using the Grafana. This tutorial covers following steps:
+The InfluxDB Connector is a tool to enable data extraction from the RIoT2 system to InfluxDB.
+The data can then be visualized, for instance, by using Grafana. This tutorial covers the following steps:
 
-1. Installing the InfluxDB 2
+1. Installing InfluxDB 2
 2. Installing the Connector
-3. Installing and setting Grafana
+3. Installing and setting up Grafana
 
 > [!NOTE]  
-> This tutorial assumes that RIoT2 is already setup and is running properly 
+> This tutorial assumes that RIoT2 is already set up and running properly.
 
 > [!NOTE]  
-> Currently the connector extracts only number and boolean data. Entity data type is to be added later.
+> Only `Boolean` and `Number` leaf values are extracted. `Text` and `TextArray` values are currently skipped.
+
+## How it works
+
+The connector subscribes to the RIoT2 MQTT broker and listens for `report` and `command` messages.
+When the orchestrator publishes its configuration, the connector downloads the report, command, and
+variable templates from the orchestrator's API (`{ApiBaseUrl}/api/nodes/report/templates`, `.../command/templates`,
+`.../variable/templates`). These templates map message IDs to a device/node name, which are used to
+tag the data points written to InfluxDB.
+
+`Boolean` and `Number` values are written as a single field named `value`. `Entity` values (nested objects)
+are flattened recursively, and each boolean/number leaf property becomes its own field on the same point,
+named after its dot-separated path (e.g. `Temperature`, `Nested.Battery`). Non-numeric/boolean leaves
+(strings, arrays, null) inside an entity, as well as top-level `Text`/`TextArray` values, are skipped.
 
 
 ## 1. Installing InfluxDB
-The first step is to install InfluxDB 2. The recommended way is to use Docker, but of course any Influx intallation can be used.
-InfluxDB is available for x86_64 and ARM64 architectures, debending on where you deceide to run it.
+The first step is to install InfluxDB 2. The recommended way is to use Docker, but any InfluxDB installation can be used.
+InfluxDB is available for x86_64 and ARM64 architectures, depending on where you decide to run it.
 
 
 Pull the image from the repo by running following command:
@@ -46,14 +59,14 @@ docker run \
 
 
 ## 2. Installing the connector
-The second step is to install the connector. The connector that will will extract data directly from the MQTT and push it to InfluxDB. 
+The second step is to install the connector. The connector will extract data directly from MQTT and push it to InfluxDB.
 
-Pull image from container
+Pull the image from the container registry:
 ```
 docker pull ghcr.io/revolutionized-iot2/riot2-influxdb:latest
 ```
 
-Start the container with following command. Update environment variables to according your settings:
+Start the container with the following command. Update the environment variables according to your settings:
 
 ```
 docker run -d --restart=on-failure:5 \
@@ -70,26 +83,43 @@ docker run -d --restart=on-failure:5 \
  ghcr.io/revolutionized-iot2/riot2-influxdb:latest
 ```
 
-## 3. Installing and settting up Grafana
-The final step is to install Grafana and set it up to visualize the data in your RIoT2 -system
+### Environment variables
 
-You follow instructions from here:
+| Variable | Description |
+|---|---|
+| `RIOT2_MQTT_IP` | Address (host/IP) of the RIoT2 MQTT broker |
+| `RIOT2_MQTT_USERNAME` | MQTT username |
+| `RIOT2_MQTT_PASSWORD` | MQTT password |
+| `RIOT2_CONNECTOR_ID` | Unique client/connector ID used to identify this connector on the MQTT bus |
+| `RIOT2_HANDLE_COMMANDS` | `TRUE`/`FALSE` — when `TRUE`, command messages are also written to InfluxDB in addition to reports |
+| `RIOT2_INFLUXDB_HOST` | URL of the InfluxDB instance, e.g. `http://192.168.0.34:8086` |
+| `RIOT2_INFLUXDB_TOKEN` | InfluxDB API token with write access to the target bucket |
+| `RIOT2_INFLUXDB_BUCKET` | InfluxDB bucket to write data points to |
+| `RIOT2_INFLUXDB_ORGANIZATION` | InfluxDB organization name |
+| `TZ` | Container timezone, e.g. `Europe/Helsinki` |
+
+## 3. Installing and setting up Grafana
+The final step is to install Grafana and set it up to visualize the data in your RIoT2 system.
+
+Follow the instructions here to install Grafana:
 https://grafana.com/docs/grafana/latest/setup-grafana/configure-docker/
 
-Once Grafana is running, setup influxDB as datasource by following instructions from here:
+Once Grafana is running, set up InfluxDB as a datasource by following the instructions here:
 https://grafana.com/docs/grafana/latest/datasources/influxdb/configure-influxdb-data-source/
 
+Visualize your data by creating dashboards/panels, following the instructions here:
+https://grafana.com/docs/grafana/latest/panels-visualizations/
 
-Visualize your data by following instructions:
-https://grafana.com/docs/grafana/latest/datasources/influxdb/configure-influxdb-data-source/
-
+Each data point written by the connector uses the following schema:
 
 ```
 Tags:
-    message
-    device
-    node
-    id
-    
-Fields: value
+    message  - "report" or "command"
+    device   - device name from the template
+    node     - node name from the template
+    id       - message/template id
+
+Fields:
+    value                - for Boolean/Number values
+    <dot.separated.path> - one field per boolean/number leaf, for Entity values
 ```
