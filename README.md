@@ -15,6 +15,9 @@ The data can then be visualized, for instance, by using Grafana. This tutorial c
 
 ## How it works
 
+Source builds require `RIoT2.Core` package `0.1.40` from the private feed. This version preserves
+large integer and JSON-looking text token types when decoding MQTT reports and commands.
+
 The connector subscribes to the RIoT2 MQTT broker and listens for `report` and `command` messages.
 When the orchestrator publishes its configuration, the connector downloads the report, command, and
 variable templates from the orchestrator's API (`{ApiBaseUrl}/api/nodes/report/templates`, `.../command/templates`,
