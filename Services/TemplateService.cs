@@ -1,4 +1,4 @@
-﻿using RIoT2.Connector.InfluxDB.Models;
+using RIoT2.Connector.InfluxDB.Models;
 using RIoT2.Connector.InfluxDB.Services.Interfaces;
 using RIoT2.Core.Utils;
 
@@ -6,43 +6,45 @@ namespace RIoT2.Connector.InfluxDB.Services
 {
     public class TemplateService : ITemplateService
     {
+        private readonly HttpClient _http;
+        private readonly SemaphoreSlim _loadGate = new(1, 1);
+        private TemplateSnapshot _snapshot;
 
-        public void Load(string orchestratorBaseUrl)
+        public TemplateService(HttpClient http) => _http = http;
+
+        public TemplateSnapshot Snapshot => Volatile.Read(ref _snapshot);
+        public bool TemplatesLoaded => Snapshot != null;
+        public List<Template> ReportTemplates => Snapshot?.Reports.ToList() ?? [];
+        public List<Template> CommandTemplates => Snapshot?.Commands.ToList() ?? [];
+        public List<Template> VariableTemplates => Snapshot?.Variables.ToList() ?? [];
+
+        public async Task LoadAsync(string orchestratorBaseUrl, CancellationToken cancellationToken = default)
         {
-            TemplatesLoaded = false;
-            var reportGet = Web.GetAsync(orchestratorBaseUrl + "/api/nodes/report/templates");
-            var commandGet = Web.GetAsync(orchestratorBaseUrl + "/api/nodes/command/templates");
-            var variableGet = Web.GetAsync(orchestratorBaseUrl + "/api/nodes/variable/templates");
-            Task.WaitAll(reportGet, commandGet, variableGet);
-
-            if (reportGet.Result.IsSuccessStatusCode)
+            await _loadGate.WaitAsync(cancellationToken);
+            try
             {
-                var reportTemplateJson = reportGet.Result.Content.ReadAsStringAsync().Result;
-                ReportTemplates = Json.Deserialize<List<Template>>(reportTemplateJson);
-                TemplatesLoaded = true;
+                var root = orchestratorBaseUrl.TrimEnd('/');
+                var reports = LoadListAsync(root + "/api/nodes/report/templates", cancellationToken);
+                var commands = LoadListAsync(root + "/api/nodes/command/templates", cancellationToken);
+                var variables = LoadListAsync(root + "/api/nodes/variable/templates", cancellationToken);
+                await Task.WhenAll(reports, commands, variables);
+                Volatile.Write(ref _snapshot, new TemplateSnapshot(
+                    (await reports).AsReadOnly(), (await commands).AsReadOnly(), (await variables).AsReadOnly()));
             }
-
-            if (commandGet.Result.IsSuccessStatusCode)
+            finally
             {
-                var commandTemplateJson = commandGet.Result.Content.ReadAsStringAsync().Result;
-                CommandTemplates = Json.Deserialize<List<Template>>(commandTemplateJson);
-                TemplatesLoaded = true;
-            }
-
-            if (variableGet.Result.IsSuccessStatusCode)
-            {
-                var variableTemplateJson = variableGet.Result.Content.ReadAsStringAsync().Result;
-                VariableTemplates = Json.Deserialize<List<Template>>(variableTemplateJson);
-                TemplatesLoaded = true;
+                _loadGate.Release();
             }
         }
 
-        public List<Template> ReportTemplates { get; private set; }
-
-        public List<Template> CommandTemplates { get; private set; }
-
-        public List<Template> VariableTemplates { get; private set; }
-
-        public bool TemplatesLoaded { get; private set; }
+        private async Task<List<Template>> LoadListAsync(string url, CancellationToken cancellationToken)
+        {
+            using var response = await _http.GetAsync(url, cancellationToken);
+            response.EnsureSuccessStatusCode();
+            var templates = Json.Deserialize<List<Template>>(await response.Content.ReadAsStringAsync(cancellationToken));
+            if (templates == null || templates.Any(t => t == null || string.IsNullOrWhiteSpace(t.Id) || string.IsNullOrWhiteSpace(t.Name)))
+                throw new InvalidDataException($"Invalid template response from {url}.");
+            return templates;
+        }
     }
 }

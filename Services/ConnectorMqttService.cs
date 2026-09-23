@@ -18,6 +18,7 @@ namespace RIoT2.Connector.InfluxDB.Services
         private string _commandTopic;
         private string _onlineTopic;
         private string _configurationTopic;
+        private readonly string _orchestratorOnlineTopic;
 
         public ConnectorMqttService(ILogger<ConnectorMqttService> logger,
             IMqttMessageHandlerService mqttMessageHandlerService,
@@ -35,6 +36,7 @@ namespace RIoT2.Connector.InfluxDB.Services
             _commandTopic = Constants.Get("+", MqttTopic.Command);
             _onlineTopic = Constants.Get(_connector.Configuration.Mqtt.ClientId, MqttTopic.NodeOnline);
             _configurationTopic = Constants.Get(_connector.Configuration.Mqtt.ClientId, MqttTopic.Configuration);
+            _orchestratorOnlineTopic = Constants.Get("+", MqttTopic.OrchestratorOnline);
 
             _client = new MqttClient(_connector.Configuration.Mqtt.ClientId,
                 _connector.Configuration.Mqtt.ServerUrl,
@@ -51,10 +53,10 @@ namespace RIoT2.Connector.InfluxDB.Services
         {
             try
             {
-                await _client.Start(_reportTopic, _commandTopic, _configurationTopic);
                 _client.MessageReceived += client_MessageReceived;
+                _client.ConnectedAsync += SendNodeOnlineMessage;
+                await _client.Start(_reportTopic, _commandTopic, _configurationTopic, _orchestratorOnlineTopic);
                 _logger.LogInformation("Connected to MQTT and listening messages");
-                await SendNodeOnlineMessage();
             }
             catch (Exception x)
             {
@@ -74,19 +76,23 @@ namespace RIoT2.Connector.InfluxDB.Services
 
         public async Task Stop()
         {
+            _client.MessageReceived -= client_MessageReceived;
+            _client.ConnectedAsync -= SendNodeOnlineMessage;
             await _client.Stop();
         }
 
-        private void client_MessageReceived(MqttEventArgs mqttEventArgs)
+        private async void client_MessageReceived(MqttEventArgs mqttEventArgs)
         {
             try
             {
+                if (MqttClient.IsMatch(mqttEventArgs.Topic, _orchestratorOnlineTopic))
+                    await SendNodeOnlineMessage();
                 if (MqttClient.IsMatch(mqttEventArgs.Topic, _configurationTopic))
                 {
                     try
                     {
                         var configurationCommand = Json.Deserialize<ConfigurationCommand>(mqttEventArgs.Message);
-                        _templates.Load(configurationCommand.ApiBaseUrl);
+                        await _templates.LoadAsync(configurationCommand.ApiBaseUrl);
                     }
                     catch (Exception x) 
                     {

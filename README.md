@@ -15,7 +15,7 @@ The data can then be visualized, for instance, by using Grafana. This tutorial c
 
 ## How it works
 
-Source builds require `RIoT2.Core` package `0.1.40` from the private feed. This version preserves
+Source builds require `RIoT2.Core` package `0.1.41` from the private feed. This version preserves
 large integer and JSON-looking text token types when decoding MQTT reports and commands.
 
 The connector subscribes to the RIoT2 MQTT broker and listens for `report` and `command` messages.
@@ -23,6 +23,17 @@ When the orchestrator publishes its configuration, the connector downloads the r
 variable templates from the orchestrator's API (`{ApiBaseUrl}/api/nodes/report/templates`, `.../command/templates`,
 `.../variable/templates`). These templates map message IDs to a device/node name, which are used to
 tag the data points written to InfluxDB.
+
+Templates become ready only after all three responses succeed and validate. Refreshes publish one
+complete snapshot; a failed refresh logs an error and retains the last complete snapshot. Until the
+first successful load, reports and commands are skipped with a warning. The connector reannounces
+presence after reconnecting so the orchestrator can resend configuration.
+
+Report timestamps use the report's Unix-seconds `TimeStamp`, including entity points; command
+timestamps use receipt time because commands have no source timestamp. Scalar numeric fields remain
+InfluxDB floating-point fields for compatibility with existing buckets, now accepting large and
+scientific-notation values without narrowing to Int32. IEEE-754 precision limits still apply (integers
+above 2^53 need an explicit schema migration if exact integer storage is required).
 
 `Boolean` and `Number` values are written as a single field named `value`. `Entity` values (nested objects)
 are flattened recursively, and each boolean/number leaf property becomes its own field on the same point,

@@ -17,7 +17,13 @@ namespace RIoT2.Connector.InfluxDB.Services
 
         public PointData HandleCommand(Command command)
         {
-            var template = _templates.CommandTemplates.FirstOrDefault(x => x.Id == command.Id);
+            var snapshot = _templates.Snapshot;
+            if (snapshot == null)
+            {
+                _logger.LogWarning("Templates not loaded. Cannot process command");
+                return null;
+            }
+            var template = snapshot.Commands.FirstOrDefault(x => x.Id == command.Id);
             if(template == null)
                 return null;
 
@@ -38,11 +44,11 @@ namespace RIoT2.Connector.InfluxDB.Services
                         .Tag("device", template.Device)
                         .Tag("node", template.Node)
                         .Tag("id", command.Id)
-                        .Field("value", (command.Value.ToJson().Contains('.')) ? command.Value.GetValue<double>() : command.Value.GetValue<int>())
+                        .Field("value", NumericValue(command.Value))
                         .Timestamp(DateTime.UtcNow, WritePrecision.Ms);
 
                 case Core.ValueType.Entity:
-                    return BuildEntityPoint(template.Name, "command", template.Device, template.Node, command.Id, command.Value.GetAsObject());
+                    return BuildEntityPoint(template.Name, "command", template.Device, template.Node, command.Id, command.Value.GetAsObject(), DateTime.UtcNow);
 
                 default:
                     return null;
@@ -51,19 +57,21 @@ namespace RIoT2.Connector.InfluxDB.Services
 
         public PointData HandleReport(Report report)
         {
-            if (!_templates.TemplatesLoaded) 
+            var snapshot = _templates.Snapshot;
+            if (snapshot == null)
             {
                 _logger.LogWarning("Templates not loaded. Cannot process report");
                 return null;
             }
 
-            var template = _templates.ReportTemplates.FirstOrDefault(x => x.Id == report.Id);
+            var template = snapshot.Reports.FirstOrDefault(x => x.Id == report.Id);
             if (template == default)
-                template = _templates.VariableTemplates.FirstOrDefault(x => x.Id == report.Id);
+                template = snapshot.Variables.FirstOrDefault(x => x.Id == report.Id);
 
             if (template == default)
                 return null;
 
+            var timestamp = DateTimeOffset.FromUnixTimeSeconds(report.TimeStamp).UtcDateTime;
             switch (report.Value.Type)
             {
                 case Core.ValueType.Boolean:
@@ -73,7 +81,7 @@ namespace RIoT2.Connector.InfluxDB.Services
                         .Tag("node", template.Node)
                         .Tag("id", report.Id)
                         .Field("value", report.Value.GetValue<bool>())
-                        .Timestamp(DateTime.UtcNow, WritePrecision.Ms);
+                        .Timestamp(timestamp, WritePrecision.Ms);
 
                 case Core.ValueType.Number:
                     return PointData.Measurement(template.Name)
@@ -81,18 +89,27 @@ namespace RIoT2.Connector.InfluxDB.Services
                         .Tag("device", template.Device)
                         .Tag("node", template.Node)
                         .Tag("id", report.Id)
-                        .Field("value", (report.Value.ToJson().Contains('.')) ? report.Value.GetValue<double>() : report.Value.GetValue<int>())
-                        .Timestamp(DateTime.UtcNow, WritePrecision.Ms);
+                        .Field("value", NumericValue(report.Value))
+                        .Timestamp(timestamp, WritePrecision.Ms);
 
                 case Core.ValueType.Entity:
-                    return BuildEntityPoint(template.Name, "report", template.Device, template.Node, report.Id, report.Value.GetAsObject());
+                    return BuildEntityPoint(template.Name, "report", template.Device, template.Node, report.Id, report.Value.GetAsObject(), timestamp);
 
                 default:
                     return null;
             }
         }
 
-        private PointData BuildEntityPoint(string measurement, string message, string device, string node, string id, object entity)
+        private static double NumericValue(ValueModel value)
+        {
+            using var document = System.Text.Json.JsonDocument.Parse(value.ToJson());
+            var number = document.RootElement.GetDouble();
+            if (!double.IsFinite(number))
+                throw new InvalidDataException("InfluxDB numeric fields must be finite.");
+            return number;
+        }
+
+        private PointData BuildEntityPoint(string measurement, string message, string device, string node, string id, object entity, DateTime timestamp)
         {
             var fields = EntityFlattener.Flatten(entity).ToList();
             if (!fields.Any())
@@ -106,7 +123,7 @@ namespace RIoT2.Connector.InfluxDB.Services
                 .Tag("device", device)
                 .Tag("node", node)
                 .Tag("id", id)
-                .Timestamp(DateTime.UtcNow, WritePrecision.Ms);
+                .Timestamp(timestamp, WritePrecision.Ms);
 
             foreach (var (path, value) in fields)
                 point = AddField(point, path, value);
