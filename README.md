@@ -29,6 +29,17 @@ complete snapshot; a failed refresh logs an error and retains the last complete 
 first successful load, reports and commands are skipped with a warning. The connector reannounces
 presence after reconnecting so the orchestrator can resend configuration.
 
+One hosted writer owns the InfluxDB client for the application's lifetime. MQTT callbacks enqueue
+points without waiting for HTTP. Its bounded, volatile queue holds 1,000 points; a single worker
+writes currently available points in batches of up to 100, preserving order. Overflow/stopping rejects
+the point explicitly and the MQTT handler logs the failure. HTTP errors are logged with the affected
+batch size; there are no automatic retries or durable replay. This replaces the SDK's per-point
+buffered-writer creation/disposal and its implicit retry behavior with an explicit delivery policy.
+
+The writer starts before MQTT and stops after MQTT has stopped accepting input. Normal shutdown
+drains accepted points; host cancellation interrupts HTTP and logs queued points abandoned plus any
+in-flight batch whose delivery is unknown. Queue acceptance must not be treated as persistence.
+
 Report timestamps use the report's Unix-seconds `TimeStamp`, including entity points; command
 timestamps use receipt time because commands have no source timestamp. Scalar numeric fields remain
 InfluxDB floating-point fields for compatibility with existing buckets, now accepting large and

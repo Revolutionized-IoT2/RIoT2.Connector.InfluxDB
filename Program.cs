@@ -5,13 +5,15 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddSingleton<IConnectorConfigurationService, ConnectorConfigurationService>();
-builder.Services.AddSingleton<IInfluxDBService, InfluxDBService>();
+builder.Services.AddSingleton<InfluxDBService>();
+builder.Services.AddSingleton<IInfluxDBService>(services => services.GetRequiredService<InfluxDBService>());
 builder.Services.AddHttpClient("templates", client => client.Timeout = TimeSpan.FromSeconds(30));
 builder.Services.AddSingleton<ITemplateService>(services =>
     new TemplateService(services.GetRequiredService<IHttpClientFactory>().CreateClient("templates")));
 builder.Services.AddSingleton<IMqttMessageHandlerService, MqttMessageHandlerService>();
 builder.Services.AddSingleton<IConnectorMqttService, ConnectorMqttService>();
 
+builder.Services.AddHostedService<InfluxDBService>(services => services.GetRequiredService<InfluxDBService>());
 builder.Services.AddHostedService<MqttBackgroundService>();
 
 var app = builder.Build();
