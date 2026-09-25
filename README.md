@@ -28,6 +28,8 @@ Templates become ready only after all three responses succeed and validate. Refr
 complete snapshot; a failed refresh logs an error and retains the last complete snapshot. Until the
 first successful load, reports and commands are skipped with a warning. The connector reannounces
 presence after reconnecting so the orchestrator can resend configuration.
+Configuration is read from environment variables at startup and required MQTT/InfluxDB settings
+fail fast when missing or invalid.
 
 One hosted writer owns the InfluxDB client for the application's lifetime. MQTT callbacks enqueue
 points without waiting for HTTP. Its bounded, volatile queue holds 1,000 points; a single worker
@@ -95,18 +97,23 @@ Start the container with the following command. Update the environment variables
 
 ```
 docker run -d --restart=on-failure:5 \
+ --publish 8080:8080 \
  --env RIOT2_MQTT_IP=192.168.0.30 \
- --env RIOT2_MQTT_PASSWORD=password \
+ --env RIOT2_MQTT_PASSWORD=<mqtt-password> \
  --env RIOT2_MQTT_USERNAME=user \
  --env RIOT2_CONNECTOR_ID=B68A6865-7B63-4EC8-AF08-3FC382C955E6 \
  --env RIOT2_HANDLE_COMMANDS=FALSE \
  --env RIOT2_INFLUXDB_HOST=http://192.168.0.34:8086 \
- --env RIOT2_INFLUXDB_TOKEN=YYY \
+ --env RIOT2_INFLUXDB_TOKEN=<influx-token> \
  --env RIOT2_INFLUXDB_BUCKET=riot-data \
  --env RIOT2_INFLUXDB_ORGANIZATION=riot-org \
  --env TZ=Europe/Helsinki \
  ghcr.io/revolutionized-iot2/riot2-influxdb:latest
 ```
+
+The image runs as the non-root `app` user and includes a `/health` Docker health check. It does not
+bake in MQTT or InfluxDB secrets; pass them through environment variables, Docker secrets, or your
+container orchestrator's secret store.
 
 ### Environment variables
 
@@ -122,6 +129,23 @@ docker run -d --restart=on-failure:5 \
 | `RIOT2_INFLUXDB_BUCKET` | InfluxDB bucket to write data points to |
 | `RIOT2_INFLUXDB_ORGANIZATION` | InfluxDB organization name |
 | `TZ` | Container timezone, e.g. `Europe/Helsinki` |
+
+All variables except `RIOT2_HANDLE_COMMANDS`, `RIOT2_MQTT_USERNAME`, `RIOT2_MQTT_PASSWORD` (leave empty for anonymous brokers) and `TZ` are required. `RIOT2_INFLUXDB_HOST` must be an
+absolute `http://` or `https://` URL.
+
+### Health endpoint
+
+The connector exposes `GET /health` and `GET /healthz` for health checks. The endpoint confirms that the ASP.NET
+Core process is running; it does not prove MQTT or InfluxDB delivery is healthy.
+
+### Upgrading / breaking changes
+
+- The Docker web listener is now `8080` instead of `80` so the non-root `app` user can bind it.
+- Production containers no longer include default MQTT/InfluxDB values; set all required `RIOT2_*`
+  variables explicitly.
+- If you add bind-mounted writable directories later, make them writable by the container user
+  (UID/GID `1654` in the Microsoft .NET images), for example
+  `sudo chown -R 1654:1654 <host-directory>`.
 
 ## 3. Installing and setting up Grafana
 The final step is to install Grafana and set it up to visualize the data in your RIoT2 system.

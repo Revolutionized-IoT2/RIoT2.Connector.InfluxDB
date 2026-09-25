@@ -20,6 +20,9 @@ var app = builder.Build();
 
 // Configure the HTTP request pipeline.
 
+var health = () => Results.Ok(new { status = "ok" });
+app.MapGet("/health", health);
+app.MapGet("/healthz", health);
 
 app.Run();
 

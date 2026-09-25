@@ -3,16 +3,16 @@
     "http": {
       "commandName": "Project",
       "launchBrowser": true,
-      "launchUrl": "weatherforecast",
+      "launchUrl": "health",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development",
-        "RIOT2_MQTT_IP": "192.168.0.30",
-        "RIOT2_MQTT_PASSWORD": "password",
-        "RIOT2_MQTT_USERNAME": "edge",
+        "RIOT2_MQTT_IP": "localhost",
+        "RIOT2_MQTT_PASSWORD": "dev-password",
+        "RIOT2_MQTT_USERNAME": "dev-user",
         "RIOT2_CONNECTOR_ID": "B68A6865-7B63-4EC8-AF08-3FC382C955E6",
         "RIOT2_HANDLE_COMMANDS": "FALSE",
-        "RIOT2_INFLUXDB_HOST": "http://192.168.0.34:8086",
-        "RIOT2_INFLUXDB_TOKEN": "-token-",
+        "RIOT2_INFLUXDB_HOST": "http://localhost:8086",
+        "RIOT2_INFLUXDB_TOKEN": "dev-token",
         "RIOT2_INFLUXDB_BUCKET": "riot-data",
         "RIOT2_INFLUXDB_ORGANIZATION": "riot-org"
       },
@@ -22,7 +22,7 @@
     "IIS Express": {
       "commandName": "IISExpress",
       "launchBrowser": true,
-      "launchUrl": "weatherforecast",
+      "launchUrl": "health",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       }
@@ -30,7 +30,7 @@
     "Container (Dockerfile)": {
       "commandName": "Docker",
       "launchBrowser": true,
-      "launchUrl": "{Scheme}://{ServiceHost}:{ServicePort}/weatherforecast",
+      "launchUrl": "{Scheme}://{ServiceHost}:{ServicePort}/health",
       "environmentVariables": {
         "ASPNETCORE_HTTP_PORTS": "8080"
       },

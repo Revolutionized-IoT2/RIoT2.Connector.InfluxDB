@@ -81,7 +81,12 @@ namespace RIoT2.Connector.InfluxDB.Services
             await _client.Stop();
         }
 
-        private async void client_MessageReceived(MqttEventArgs mqttEventArgs)
+        private void client_MessageReceived(MqttEventArgs mqttEventArgs)
+        {
+            _ = HandleMessageReceivedAsync(mqttEventArgs);
+        }
+
+        private async Task HandleMessageReceivedAsync(MqttEventArgs mqttEventArgs)
         {
             try
             {
@@ -97,7 +102,7 @@ namespace RIoT2.Connector.InfluxDB.Services
                     catch (Exception x) 
                     {
                         _logger.LogError(x, "Error loading templates");
-                        throw new Exception("Error loading templates", x);
+                        return;
                     }
                 }
 

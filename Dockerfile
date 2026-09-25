@@ -5,8 +5,8 @@ FROM mcr.microsoft.com/dotnet/aspnet:8.0-alpine AS base
 WORKDIR /app
 RUN apk add --upgrade --no-cache tzdata
 ENV DOTNET_RUNNING_IN_CONTAINER=true
-ENV ASPNETCORE_HTTP_PORTS=80
-EXPOSE 80
+ENV ASPNETCORE_HTTP_PORTS=8080
+EXPOSE 8080
 
 # This stage is used to build the service project
 FROM mcr.microsoft.com/dotnet/sdk:8.0-alpine AS build
@@ -30,16 +30,9 @@ RUN dotnet publish "./RIoT2.Connector.InfluxDB.csproj" -c $BUILD_CONFIGURATION -
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
+RUN chown -R app:app /app
+USER app
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 CMD wget -q -O- http://127.0.0.1:8080/health || exit 1
 ENTRYPOINT ["dotnet", "RIoT2.Connector.InfluxDB.dll"]
 
-#Set default environment variables
-ENV RIOT2_MQTT_IP=192.168.0.30
-ENV RIOT2_MQTT_PASSWORD=password
-ENV RIOT2_MQTT_USERNAME=user
-ENV RIOT2_CONNECTOR_ID=B68A6865-7B63-4EC8-AF08-3FC382C955E6
-ENV RIOT2_HANDLE_COMMANDS=FALSE
-ENV RIOT2_INFLUXDB_HOST=http://192.168.0.34:8086
-ENV RIOT2_INFLUXDB_TOKEN=YYY
-ENV RIOT2_INFLUXDB_BUCKET=riot-data
-ENV RIOT2_INFLUXDB_ORGANIZATION=riot-org
 ENV TZ=Europe/Helsinki
