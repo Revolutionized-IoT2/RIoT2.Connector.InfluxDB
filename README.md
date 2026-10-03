@@ -1,174 +1,140 @@
-# Revolutionized-IoT2: InfluxDB Connector
+# RIoT2.Connector.InfluxDB
 
-The InfluxDB Connector is a tool to enable data extraction from the RIoT2 system to InfluxDB.
-The data can then be visualized, for instance, by using Grafana. This tutorial covers the following steps:
+InfluxDB 2 connector for the [RIoT2](https://github.com/Revolutionized-IoT2) platform. It listens
+to RIoT2 MQTT reports, optionally listens to commands, resolves template metadata from the
+orchestrator, and writes time-series points for Grafana and other InfluxDB consumers.
 
-1. Installing InfluxDB 2
-2. Installing the Connector
-3. Installing and setting up Grafana
+- Type: ASP.NET Core service
+- Target framework: .NET 8
+- Image: `ghcr.io/revolutionized-iot2/riot2-influxdb`
+- Root namespace: `RIoT2.Connector.InfluxDB`
 
-> [!NOTE]  
-> This tutorial assumes that RIoT2 is already set up and running properly.
+How connectors fit into the platform: [architecture overview](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/architecture/overview.md).
 
-> [!NOTE]  
-> Only `Boolean` and `Number` leaf values are extracted. `Text` and `TextArray` values are currently skipped.
+## What it writes
 
-## How it works
+The connector writes these values:
 
-Source builds require `RIoT2.Core` package `0.1.41` from the private feed. This version preserves
-large integer and JSON-looking text token types when decoding MQTT reports and commands.
+- Boolean and number reports.
+- Boolean and number commands when `RIOT2_HANDLE_COMMANDS=true`.
+- Entity reports or commands after recursively flattening boolean and number leaves.
 
-The connector subscribes to the RIoT2 MQTT broker and listens for `report` and `command` messages.
-When the orchestrator publishes its configuration, the connector downloads the report, command, and
-variable templates from the orchestrator's API (`{ApiBaseUrl}/api/nodes/report/templates`, `.../command/templates`,
-`.../variable/templates`). These templates map message IDs to a device/node name, which are used to
-tag the data points written to InfluxDB.
+Text, text arrays, nulls and non-numeric entity leaves are skipped. Reports use their source Unix
+timestamp. Commands have no source timestamp, so the connector stamps them when they are mapped.
 
-Templates become ready only after all three responses succeed and validate. Refreshes publish one
-complete snapshot; a failed refresh logs an error and retains the last complete snapshot. Until the
-first successful load, reports and commands are skipped with a warning. The connector reannounces
-presence after reconnecting so the orchestrator can resend configuration.
-Configuration is read from environment variables at startup and required MQTT/InfluxDB settings
-fail fast when missing or invalid.
+Each point uses the template name as the measurement and these tags:
 
-One hosted writer owns the InfluxDB client for the application's lifetime. MQTT callbacks enqueue
-points without waiting for HTTP. Its bounded, volatile queue holds 1,000 points; a single worker
-writes currently available points in batches of up to 100, preserving order. Overflow/stopping rejects
-the point explicitly and the MQTT handler logs the failure. HTTP errors are logged with the affected
-batch size; there are no automatic retries or durable replay. This replaces the SDK's per-point
-buffered-writer creation/disposal and its implicit retry behavior with an explicit delivery policy.
+| Tag | Value |
+| --- | --- |
+| `message` | `report` or `command` |
+| `device` | Device name from the template |
+| `node` | Node name from the template |
+| `id` | Report, command or variable template id |
 
-The writer starts before MQTT and stops after MQTT has stopped accepting input. Normal shutdown
-drains accepted points; host cancellation interrupts HTTP and logs queued points abandoned plus any
-in-flight batch whose delivery is unknown. Queue acceptance must not be treated as persistence.
+Scalar values are written as field `value`. Entity leaf fields use their dot-separated path.
 
-Report timestamps use the report's Unix-seconds `TimeStamp`, including entity points; command
-timestamps use receipt time because commands have no source timestamp. Scalar numeric fields remain
-InfluxDB floating-point fields for compatibility with existing buckets, now accepting large and
-scientific-notation values without narrowing to Int32. IEEE-754 precision limits still apply (integers
-above 2^53 need an explicit schema migration if exact integer storage is required).
+## Configuration
 
-`Boolean` and `Number` values are written as a single field named `value`. `Entity` values (nested objects)
-are flattened recursively, and each boolean/number leaf property becomes its own field on the same point,
-named after its dot-separated path (e.g. `Temperature`, `Nested.Battery`). Non-numeric/boolean leaves
-(strings, arrays, null) inside an entity, as well as top-level `Text`/`TextArray` values, are skipped.
+Set these variables:
 
+- `RIOT2_CONNECTOR_ID`
+- `RIOT2_MQTT_IP`
+- `RIOT2_MQTT_USERNAME` and `RIOT2_MQTT_PASSWORD` (optional for anonymous brokers)
+- `RIOT2_INFLUXDB_HOST`
+- `RIOT2_INFLUXDB_TOKEN`
+- `RIOT2_INFLUXDB_BUCKET`
+- `RIOT2_INFLUXDB_ORGANIZATION`
+- `RIOT2_HANDLE_COMMANDS` (optional, `true` enables command writes)
 
-## 1. Installing InfluxDB
-The first step is to install InfluxDB 2. The recommended way is to use Docker, but any InfluxDB installation can be used.
-InfluxDB is available for x86_64 and ARM64 architectures, depending on where you decide to run it.
+The full environment contract, ports and image details are in
+[env-vars.md](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/contracts/env-vars.md).
+MQTT topics and payloads are in
+[mqtt-topics.md](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/contracts/mqtt-topics.md).
 
+## Build, test and run
 
-Pull the image from the repo by running following command:
+From the workspace root (`C:\Src\RIoT2`):
 
-```
-docker pull influxdb:2-alpine
+```powershell
+dotnet restore .\RIoT2.Connector.InfluxDB\RIoT2.Connector.InfluxDB.sln
+dotnet build .\RIoT2.Connector.InfluxDB\RIoT2.Connector.InfluxDB.csproj
+dotnet test .\RIoT2.Tests\RIoT2.Tests.csproj
+dotnet run --project .\RIoT2.Connector.InfluxDB\RIoT2.Connector.InfluxDB.csproj
 ```
 
-start the container:
-```
-docker run \
- --name influxdb2 \
- --publish 8086:8086 \
- --mount type=volume,source=influxdb2-data,target=/var/lib/influxdb2 \
- --mount type=volume,source=influxdb2-config,target=/etc/influxdb2 \
- --env DOCKER_INFLUXDB_INIT_MODE=setup \
- --env DOCKER_INFLUXDB_INIT_USERNAME=ADMIN_USERNAME \
- --env DOCKER_INFLUXDB_INIT_PASSWORD=ADMIN_PASSWORD \
- --env DOCKER_INFLUXDB_INIT_ORG=ORG_NAME \
- --env DOCKER_INFLUXDB_INIT_BUCKET=BUCKET_NAME \
- influxdb:2
- ```
+The test suite lives in [RIoT2.Tests](https://github.com/Revolutionized-IoT2/RIoT2.Tests), which
+project-references this connector and the orchestrator.
 
- After the container is running, you can connect to influx UI with your credentials.
+## Docker
 
- In UI create the token for the connector application.
+Run the published image:
 
-
-## 2. Installing the connector
-The second step is to install the connector. The connector will extract data directly from MQTT and push it to InfluxDB.
-
-Pull the image from the container registry:
-```
-docker pull ghcr.io/revolutionized-iot2/riot2-influxdb:latest
+```powershell
+docker run -d --restart=on-failure:5 `
+  --publish 8080:8080 `
+  --env RIOT2_MQTT_IP=192.168.0.30 `
+  --env RIOT2_MQTT_USERNAME=user `
+  --env RIOT2_MQTT_PASSWORD=<mqtt-password> `
+  --env RIOT2_CONNECTOR_ID=<connector-id> `
+  --env RIOT2_HANDLE_COMMANDS=false `
+  --env RIOT2_INFLUXDB_HOST=http://<influx-host>:8086 `
+  --env RIOT2_INFLUXDB_TOKEN=<influx-token> `
+  --env RIOT2_INFLUXDB_BUCKET=riot-data `
+  --env RIOT2_INFLUXDB_ORGANIZATION=riot-org `
+  ghcr.io/revolutionized-iot2/riot2-influxdb:latest
 ```
 
-Start the container with the following command. Update the environment variables according to your settings:
+The image runs as the non-root `app` user and exposes `GET /health` and `GET /healthz`. Those
+endpoints confirm the process is running; they do not prove MQTT or InfluxDB delivery is healthy.
 
+## InfluxDB and Grafana
+
+Use any InfluxDB 2 deployment that the connector can reach. A minimal Docker setup (x86_64 or
+ARM64):
+
+```bash
+docker run -d --name influxdb2 -p 8086:8086 \
+  --mount type=volume,source=influxdb2-data,target=/var/lib/influxdb2 \
+  --mount type=volume,source=influxdb2-config,target=/etc/influxdb2 \
+  --env DOCKER_INFLUXDB_INIT_MODE=setup \
+  --env DOCKER_INFLUXDB_INIT_USERNAME=<admin-user> \
+  --env DOCKER_INFLUXDB_INIT_PASSWORD=<admin-password> \
+  --env DOCKER_INFLUXDB_INIT_ORG=<org> \
+  --env DOCKER_INFLUXDB_INIT_BUCKET=<bucket> \
+  influxdb:2
 ```
-docker run -d --restart=on-failure:5 \
- --publish 8080:8080 \
- --env RIOT2_MQTT_IP=192.168.0.30 \
- --env RIOT2_MQTT_PASSWORD=<mqtt-password> \
- --env RIOT2_MQTT_USERNAME=user \
- --env RIOT2_CONNECTOR_ID=B68A6865-7B63-4EC8-AF08-3FC382C955E6 \
- --env RIOT2_HANDLE_COMMANDS=FALSE \
- --env RIOT2_INFLUXDB_HOST=http://192.168.0.34:8086 \
- --env RIOT2_INFLUXDB_TOKEN=<influx-token> \
- --env RIOT2_INFLUXDB_BUCKET=riot-data \
- --env RIOT2_INFLUXDB_ORGANIZATION=riot-org \
- --env TZ=Europe/Helsinki \
- ghcr.io/revolutionized-iot2/riot2-influxdb:latest
-```
 
-The image runs as the non-root `app` user and includes a `/health` Docker health check. It does not
-bake in MQTT or InfluxDB secrets; pass them through environment variables, Docker secrets, or your
-container orchestrator's secret store.
+Then open the InfluxDB UI on port 8086 and create a token with write access to the bucket. Pass
+it as `RIOT2_INFLUXDB_TOKEN`. For Grafana, follow the official documentation:
 
-### Environment variables
+- [InfluxDB Docker guide](https://docs.influxdata.com/influxdb/v2/install/use-docker-compose/)
+- [Grafana Docker setup](https://grafana.com/docs/grafana/latest/setup-grafana/configure-docker/)
+- [Grafana InfluxDB data source](https://grafana.com/docs/grafana/latest/datasources/influxdb/configure-influxdb-data-source/)
 
-| Variable | Description |
-|---|---|
-| `RIOT2_MQTT_IP` | Address (host/IP) of the RIoT2 MQTT broker |
-| `RIOT2_MQTT_USERNAME` | MQTT username |
-| `RIOT2_MQTT_PASSWORD` | MQTT password |
-| `RIOT2_CONNECTOR_ID` | Unique client/connector ID used to identify this connector on the MQTT bus |
-| `RIOT2_HANDLE_COMMANDS` | `TRUE`/`FALSE` — when `TRUE`, command messages are also written to InfluxDB in addition to reports |
-| `RIOT2_INFLUXDB_HOST` | URL of the InfluxDB instance, e.g. `http://192.168.0.34:8086` |
-| `RIOT2_INFLUXDB_TOKEN` | InfluxDB API token with write access to the target bucket |
-| `RIOT2_INFLUXDB_BUCKET` | InfluxDB bucket to write data points to |
-| `RIOT2_INFLUXDB_ORGANIZATION` | InfluxDB organization name |
-| `TZ` | Container timezone, e.g. `Europe/Helsinki` |
+## Delivery behaviour
 
-All variables except `RIOT2_HANDLE_COMMANDS`, `RIOT2_MQTT_USERNAME`, `RIOT2_MQTT_PASSWORD` (leave empty for anonymous brokers) and `TZ` are required. `RIOT2_INFLUXDB_HOST` must be an
-absolute `http://` or `https://` URL.
+The writer owns one InfluxDB client for the application lifetime. MQTT callbacks enqueue points to
+a bounded in-memory queue of 1000 points. A single worker writes batches of up to 100 points in
+order. Failed HTTP writes are logged and not retried; there is no durable replay yet.
 
-### Health endpoint
+Durable spooling and the connector SDK are planned in
+[design 7.3](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/design/connector-sdk.md).
 
-The connector exposes `GET /health` and `GET /healthz` for health checks. The endpoint confirms that the ASP.NET
-Core process is running; it does not prove MQTT or InfluxDB delivery is healthy.
+## Versions and releases
 
-### Upgrading / breaking changes
+- Release notes are in [CHANGELOG.md](CHANGELOG.md).
+- To release, push a tag `x.y.z` on `main`. CI publishes the Docker image to GitHub Container
+  Registry.
+- This repository targets `net8.0`, which reaches end of support on 10 November 2026. The .NET 10
+  migration is planned in [M8](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/plans/m08-dotnet10-migration.md).
+- This repository currently references `RIoT2.Core` package `0.1.41`; see maintainer action
+  [MA2](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/backlog/README.md#ma2-cut-a-core-release-and-align-all-consumers).
 
-- The Docker web listener is now `8080` instead of `80` so the non-root `app` user can bind it.
-- Production containers no longer include default MQTT/InfluxDB values; set all required `RIOT2_*`
-  variables explicitly.
-- If you add bind-mounted writable directories later, make them writable by the container user
-  (UID/GID `1654` in the Microsoft .NET images), for example
-  `sudo chown -R 1654:1654 <host-directory>`.
+## Contributing
 
-## 3. Installing and setting up Grafana
-The final step is to install Grafana and set it up to visualize the data in your RIoT2 system.
+- Instructions for AI coding agents: [AGENTS.md](AGENTS.md).
+- Platform documentation: [.github/docs](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/README.md).
 
-Follow the instructions here to install Grafana:
-https://grafana.com/docs/grafana/latest/setup-grafana/configure-docker/
+## License
 
-Once Grafana is running, set up InfluxDB as a datasource by following the instructions here:
-https://grafana.com/docs/grafana/latest/datasources/influxdb/configure-influxdb-data-source/
-
-Visualize your data by creating dashboards/panels, following the instructions here:
-https://grafana.com/docs/grafana/latest/panels-visualizations/
-
-Each data point written by the connector uses the following schema:
-
-```
-Tags:
-    message  - "report" or "command"
-    device   - device name from the template
-    node     - node name from the template
-    id       - message/template id
-
-Fields:
-    value                - for Boolean/Number values
-    <dot.separated.path> - one field per boolean/number leaf, for Entity values
-```
+See [LICENSE](LICENSE).
