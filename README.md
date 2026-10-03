@@ -5,7 +5,7 @@ to RIoT2 MQTT reports, optionally listens to commands, resolves template metadat
 orchestrator, and writes time-series points for Grafana and other InfluxDB consumers.
 
 - Type: ASP.NET Core service
-- Target framework: .NET 8
+- Target framework: .NET 10
 - Image: `ghcr.io/revolutionized-iot2/riot2-influxdb`
 - Root namespace: `RIoT2.Connector.InfluxDB`
 
@@ -62,6 +62,9 @@ dotnet test .\RIoT2.Tests\RIoT2.Tests.csproj
 dotnet run --project .\RIoT2.Connector.InfluxDB\RIoT2.Connector.InfluxDB.csproj
 ```
 
+Add `-p:CI=true` to `dotnet build` to reproduce CI analyzer settings locally. Package versions are
+centralized in `Directory.Packages.props`; `PackageReference` items do not carry versions.
+
 The test suite lives in [RIoT2.Tests](https://github.com/Revolutionized-IoT2/RIoT2.Tests), which
 project-references this connector and the orchestrator.
 
@@ -86,6 +89,8 @@ docker run -d --restart=on-failure:5 `
 
 The image runs as the non-root `app` user and exposes `GET /health` and `GET /healthz`. Those
 endpoints confirm the process is running; they do not prove MQTT or InfluxDB delivery is healthy.
+The Dockerfile uses `mcr.microsoft.com/dotnet/aspnet:10.0-alpine` for runtime and
+`mcr.microsoft.com/dotnet/sdk:10.0-alpine` for build.
 
 ## InfluxDB and Grafana
 
@@ -125,10 +130,11 @@ Durable spooling and the connector SDK are planned in
 - Release notes are in [CHANGELOG.md](CHANGELOG.md).
 - To release, push a tag `x.y.z` on `main`. CI publishes the Docker image to GitHub Container
   Registry.
-- This repository targets `net8.0`, which reaches end of support on 10 November 2026. The .NET 10
-  migration is planned in [M8](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/plans/m08-dotnet10-migration.md).
-- This repository currently references `RIoT2.Core` package `0.1.41`; see maintainer action
-  [MA2](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/backlog/README.md#ma2-cut-a-core-release-and-align-all-consumers).
+- This repository references `RIoT2.Core` package `0.1.45`. Until that Core package is published,
+  restore with `C:\Src\RIoT2\.localfeed` as an extra source.
+- [M8](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/plans/m08-dotnet10-migration.md)
+  completed the target-framework migration; nullable and threading-analyzer practice steps remain
+  open in the platform plan.
 
 ## Contributing
 

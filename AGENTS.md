@@ -43,7 +43,7 @@ dotnet run --project .\RIoT2.Connector.InfluxDB\RIoT2.Connector.InfluxDB.csproj
 | `Services/MqttMessageHandlerService.cs` | Report/command to InfluxDB point mapping |
 | `Services/EntityFlattener.cs` | Recursive entity field flattening |
 | `Services/InfluxDBService.cs` | Bounded in-memory queue and batch writer |
-| `Dockerfile` | `net8.0` image, web port 8080 |
+| `Dockerfile` | `net10.0` image, web port 8080 |
 
 ## Contracts consumed here
 
@@ -71,7 +71,8 @@ dotnet run --project .\RIoT2.Connector.InfluxDB\RIoT2.Connector.InfluxDB.csproj
   all three HTTP responses succeed and validate.
 - Only write boolean, numeric and entity boolean/numeric leaf values. Top-level text/text-array
   values and non-numeric entity leaves are skipped.
-- Keep `RIoT2.Core` as a package reference. This repository currently pins `RIoT2.Core` `0.1.41`.
+- Keep `RIoT2.Core` as a package reference. This repository currently pins `RIoT2.Core` `0.1.45`.
+- Keep `PackageReference` items versionless; package versions belong in `Directory.Packages.props`.
 - Do not commit or document real InfluxDB tokens or MQTT credentials.
 
 ## Pitfalls
@@ -86,12 +87,8 @@ dotnet run --project .\RIoT2.Connector.InfluxDB\RIoT2.Connector.InfluxDB.csproj
   retried; shutdown can abandon queued or in-flight points.
 - The health endpoints only prove the ASP.NET Core process is running; they do not prove MQTT,
   template loading or InfluxDB delivery.
-- This project still targets `net8.0`, which reaches end of support on 10 November 2026. Plan
-  [M8](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/plans/m08-dotnet10-migration.md)
-  covers the move to `net10.0`.
-- `RIoT2.Core` `0.1.41` has no tag in `RIoT2.Core`; only `0.1.39`, `0.1.43` and `0.1.44` are
-  tagged around it. Treat this as maintainer action
-  [MA2](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/backlog/README.md#ma2-cut-a-core-release-and-align-all-consumers).
+- `RIoT2.Core` `0.1.45` is not published yet. Use `C:\Src\RIoT2\.localfeed` as an extra NuGet
+  source while validating the migration.
 
 ## Related work
 
@@ -106,7 +103,8 @@ dotnet run --project .\RIoT2.Connector.InfluxDB\RIoT2.Connector.InfluxDB.csproj
 - [M7](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/plans/m07-contract-integration-tests.md):
   golden messages and in-process integration harness.
 - [M8](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/plans/m08-dotnet10-migration.md):
-  move this `net8.0` service and image to `net10.0`.
+  completed the `net10.0` target-framework migration; nullable and threading-analyzer practice
+  steps remain open.
 - [Design 7.1](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/design/reliable-delivery.md):
   command API and delivery semantics that future bidirectional connectors should use.
 - [Design 7.3](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/design/connector-sdk.md):

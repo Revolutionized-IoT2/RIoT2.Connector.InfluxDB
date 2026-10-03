@@ -1,7 +1,7 @@
 # See https://aka.ms/customizecontainer to learn how to customize your debug container and how Visual Studio uses this Dockerfile to build your images for faster debugging.
 
 # This stage is used when running from VS in fast mode (Default for Debug configuration)
-FROM mcr.microsoft.com/dotnet/aspnet:8.0-alpine AS base
+FROM mcr.microsoft.com/dotnet/aspnet:10.0-alpine AS base
 WORKDIR /app
 RUN apk add --upgrade --no-cache tzdata
 ENV DOTNET_RUNNING_IN_CONTAINER=true
@@ -9,12 +9,12 @@ ENV ASPNETCORE_HTTP_PORTS=8080
 EXPOSE 8080
 
 # This stage is used to build the service project
-FROM mcr.microsoft.com/dotnet/sdk:8.0-alpine AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0-alpine AS build
 ARG BUILD_CONFIGURATION=Release
 ARG NUGET_AUTH_TOKEN=token
 ARG NUGET_URL=https://nuget.pkg.github.com/Revolutionized-IoT2/index.json
 WORKDIR /src
-COPY ["RIoT2.Connector.InfluxDB.csproj", "."]
+COPY ["RIoT2.Connector.InfluxDB.csproj", "Directory.Build.props", "Directory.Packages.props", "./"]
 RUN dotnet nuget add source -n github -u AZ -p $NUGET_AUTH_TOKEN --store-password-in-clear-text $NUGET_URL
 RUN dotnet restore "./RIoT2.Connector.InfluxDB.csproj"
 COPY . .
