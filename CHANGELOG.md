@@ -7,7 +7,7 @@ then builds and pushes the Docker image to GitHub Container Registry.
 
 - Changed target framework and Docker base images to .NET 10 (`aspnet:10.0-alpine` and
   `sdk:10.0-alpine`).
-- Changed the Core dependency to `RIoT2.Core` 0.1.45 and moved package versions to
+- Changed the Core dependency to `RIoT2.Core` 1.0.1 and moved package versions to
   `Directory.Packages.props`.
 - Removed the unused `Microsoft.VisualStudio.Azure.Containers.Tools.Targets` package.
 - Documentation: `AGENTS.md` is the AI instruction file, `CLAUDE.md` imports it, and durable

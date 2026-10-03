@@ -71,7 +71,7 @@ dotnet run --project .\RIoT2.Connector.InfluxDB\RIoT2.Connector.InfluxDB.csproj
   all three HTTP responses succeed and validate.
 - Only write boolean, numeric and entity boolean/numeric leaf values. Top-level text/text-array
   values and non-numeric entity leaves are skipped.
-- Keep `RIoT2.Core` as a package reference. This repository currently pins `RIoT2.Core` `0.1.45`.
+- Keep `RIoT2.Core` as a package reference. This repository currently pins `RIoT2.Core` `1.0.1`.
 - Keep `PackageReference` items versionless; package versions belong in `Directory.Packages.props`.
 - Do not commit or document real InfluxDB tokens or MQTT credentials.
 
@@ -87,8 +87,8 @@ dotnet run --project .\RIoT2.Connector.InfluxDB\RIoT2.Connector.InfluxDB.csproj
   retried; shutdown can abandon queued or in-flight points.
 - The health endpoints only prove the ASP.NET Core process is running; they do not prove MQTT,
   template loading or InfluxDB delivery.
-- `RIoT2.Core` `0.1.45` is not published yet. Use `C:\Src\RIoT2\.localfeed` as an extra NuGet
-  source while validating the migration.
+- `RIoT2.Core` `1.0.1` is published. Use `C:\Src\RIoT2\.localfeed` as an extra NuGet source only
+  to try an unreleased Core version.
 
 ## Related work
 
