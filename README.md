@@ -128,8 +128,8 @@ Durable spooling and the connector SDK are planned in
 ## Versions and releases
 
 - Release notes are in [CHANGELOG.md](CHANGELOG.md).
-- To release, push a tag `x.y.z` on `main`. CI publishes the Docker image to GitHub Container
-  Registry.
+- To release, push a tag `x.y.z` on `main`. The release workflow validates, then publishes the
+  Docker image to GitHub Container Registry ([CI guide](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/guides/ci.md)).
 - This repository references the `RIoT2.Core` package `1.0.1` from GitHub Packages.
 - [M8](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/plans/m08-dotnet10-migration.md)
   completed the target-framework migration; nullable and threading-analyzer practice steps remain

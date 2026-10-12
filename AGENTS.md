@@ -26,10 +26,12 @@ dotnet run --project .\RIoT2.Connector.InfluxDB\RIoT2.Connector.InfluxDB.csproj
 - The run command requires the connector environment variables from
   [env-vars.md](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/contracts/env-vars.md).
   Do not copy values from `Properties/launchSettings.json`.
-- To build the container locally:
-  `docker build -t riot2-influxdb .\RIoT2.Connector.InfluxDB --build-arg NUGET_AUTH_TOKEN=<github-packages-token>`.
-- To release, push a tag `x.y.z` on `main`. CI (`.github/workflows/main.yml`) builds and pushes
-  `ghcr.io/revolutionized-iot2/riot2-influxdb:latest` and `:<tag>`.
+- To build the container locally, put a GitHub Packages token in `$env:NUGET_AUTH_TOKEN`, then:
+  `docker build --secret id=nuget_token,env=NUGET_AUTH_TOKEN -t riot2-influxdb .\RIoT2.Connector.InfluxDB`.
+  The token is a BuildKit secret; never pass it as a build argument.
+- Every push runs `.github/workflows/ci.yml` (build, image build, secret scan). To release, push
+  a tag `x.y.z` on `main`: `release.yml` validates, then pushes
+  `ghcr.io/revolutionized-iot2/riot2-influxdb:latest` and `:<tag>` ([CI guide](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/guides/ci.md)).
 
 ## Layout
 
