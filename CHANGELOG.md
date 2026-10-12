@@ -5,6 +5,10 @@ then builds and pushes the Docker image to GitHub Container Registry.
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-10-12
+
+No deployment change.
+
 - Changed the Dockerfile: the GitHub Packages token is the BuildKit secret `nuget_token` and is no
   longer stored in an image layer. The `NUGET_AUTH_TOKEN` build argument is gone.
 - CI: every push runs the build, the image build and a secret scan; a tag validates before it
