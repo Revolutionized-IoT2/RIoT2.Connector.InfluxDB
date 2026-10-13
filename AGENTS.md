@@ -98,8 +98,8 @@ dotnet run --project .\RIoT2.Connector.InfluxDB\RIoT2.Connector.InfluxDB.csproj
   Influx writes are lost on outage until a durable spool exists.
 - [Backlog item 14](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/backlog/open-issues.md):
   typed validated configuration.
-- [Backlog item 17](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/backlog/open-issues.md):
-  cross-repository contract and integration tests.
+- Backlog item 17 (cross-repository contract and integration tests) is done (I05, I06). The
+  connector isn't part of the end-to-end tests yet; its line protocol is pinned by the golden files.
 - [M4](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/plans/m04-typed-configuration.md):
   common options and validation.
 - [M7](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/plans/m07-contract-integration-tests.md):
