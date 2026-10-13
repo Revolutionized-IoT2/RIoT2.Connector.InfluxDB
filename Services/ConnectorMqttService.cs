@@ -38,10 +38,7 @@ namespace RIoT2.Connector.InfluxDB.Services
             _configurationTopic = Constants.Get(_connector.Configuration.Mqtt.ClientId, MqttTopic.Configuration);
             _orchestratorOnlineTopic = Constants.Get("+", MqttTopic.OrchestratorOnline);
 
-            _client = new MqttClient(_connector.Configuration.Mqtt.ClientId,
-                _connector.Configuration.Mqtt.ServerUrl,
-                _connector.Configuration.Mqtt.Username,
-                _connector.Configuration.Mqtt.Password);
+            _client = new MqttClient(_connector.Configuration.Mqtt, logger);
         }
 
         public void Dispose()
@@ -53,7 +50,7 @@ namespace RIoT2.Connector.InfluxDB.Services
         {
             try
             {
-                _client.MessageReceived += client_MessageReceived;
+                _client.MessageReceivedAsync += HandleMessageReceivedAsync;
                 _client.ConnectedAsync += SendNodeOnlineMessage;
                 await _client.Start(_reportTopic, _commandTopic, _configurationTopic, _orchestratorOnlineTopic);
                 _logger.LogInformation("Connected to MQTT and listening messages");
@@ -67,7 +64,7 @@ namespace RIoT2.Connector.InfluxDB.Services
 
         public async Task SendNodeOnlineMessage()
         {
-            await _client.Publish(_onlineTopic, Json.SerializeIgnoreNulls(new NodeOnlineMessage() {
+            await _client.PublishAsync(_onlineTopic, Json.SerializeIgnoreNulls(new NodeOnlineMessage() {
                 IsOnline = true,
                 Name = "InfluxDBConnector"
             }));
@@ -76,14 +73,9 @@ namespace RIoT2.Connector.InfluxDB.Services
 
         public async Task Stop()
         {
-            _client.MessageReceived -= client_MessageReceived;
+            _client.MessageReceivedAsync -= HandleMessageReceivedAsync;
             _client.ConnectedAsync -= SendNodeOnlineMessage;
             await _client.Stop();
-        }
-
-        private void client_MessageReceived(MqttEventArgs mqttEventArgs)
-        {
-            _ = HandleMessageReceivedAsync(mqttEventArgs);
         }
 
         private async Task HandleMessageReceivedAsync(MqttEventArgs mqttEventArgs)
