@@ -1,7 +1,12 @@
+using Microsoft.Extensions.Options;
 using RIoT2.Connector.InfluxDB.Services;
 using RIoT2.Connector.InfluxDB.Services.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Every RIOT2_* setting is read and validated here, before anything uses it; an invalid setting
+// stops the start with one message that lists every problem.
+builder.Services.AddSingleton(Options.Create(InfluxConnectorOptions.Load(builder.Configuration)));
 
 // Add services to the container.
 builder.Services.AddSingleton<IConnectorConfigurationService, ConnectorConfigurationService>();

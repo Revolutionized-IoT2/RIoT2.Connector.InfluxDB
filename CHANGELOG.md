@@ -5,6 +5,20 @@ then builds and pushes the Docker image to GitHub Container Registry.
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-10-13
+
+Typed configuration ([I07](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/increments/phase-0-1.md#i07-typed-configuration-s)). Built on `RIoT2.Core` 1.2.0. No deployment change: the variable names
+are the same.
+
+- Changed: `InfluxConnectorOptions` reads and validates every setting at startup, before the host
+  starts. A start with missing or invalid settings fails with one message that lists them all
+  instead of the first one, for example `Invalid InfluxDB connector configuration:
+  RIOT2_INFLUXDB_TOKEN is required; RIOT2_MQTT_IP is required.` `ConnectorConfigurationService`
+  receives `IOptions<InfluxConnectorOptions>`.
+- Changed: with `RIOT2_MQTT_USERNAME` unset, the connector now connects without a user name, like
+  the orchestrator and the node; it used to send an empty one. Brokers that allow anonymous clients
+  accept both.
+
 ## [1.0.1] - 2026-10-12
 
 No deployment change.

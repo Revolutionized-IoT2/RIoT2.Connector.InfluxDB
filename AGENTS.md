@@ -39,7 +39,8 @@ dotnet run --project .\RIoT2.Connector.InfluxDB\RIoT2.Connector.InfluxDB.csproj
 |---|---|
 | `Program.cs` | Service registrations and `/health`, `/healthz` endpoints |
 | `Models/` | Connector configuration and template snapshot models |
-| `Services/ConnectorConfigurationService.cs` | Environment variable loading and validation |
+| `Services/InfluxConnectorOptions.cs` | Every `RIOT2_*` setting the connector reads, validated at startup with Core's `SettingsReader` |
+| `Services/ConnectorConfigurationService.cs` | Connector configuration from `IOptions<InfluxConnectorOptions>` |
 | `Services/ConnectorMqttService.cs` | MQTT subscriptions, online announcement and message dispatch |
 | `Services/TemplateService.cs` | Orchestrator template catalog loading |
 | `Services/MqttMessageHandlerService.cs` | Report/command to InfluxDB point mapping |
@@ -59,7 +60,8 @@ dotnet run --project .\RIoT2.Connector.InfluxDB\RIoT2.Connector.InfluxDB.csproj
   `TemplateService` consumes `/api/nodes/report/templates`, `/api/nodes/command/templates` and
   `/api/nodes/variable/templates`; `Program.cs` serves `/health` and `/healthz`.
 - [env-vars.md](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/contracts/env-vars.md):
-  `ConnectorConfigurationService` defines the connector and InfluxDB variables.
+  `InfluxConnectorOptions` defines the connector and InfluxDB variables; nothing else reads the
+  environment.
 
 ## Rules
 
@@ -96,8 +98,7 @@ dotnet run --project .\RIoT2.Connector.InfluxDB\RIoT2.Connector.InfluxDB.csproj
 
 - [Backlog item 2](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/backlog/open-issues.md):
   Influx writes are lost on outage until a durable spool exists.
-- [Backlog item 14](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/backlog/open-issues.md):
-  typed validated configuration.
+- Backlog item 14 (typed validated configuration) is done (I07).
 - Backlog item 17 (cross-repository contract and integration tests) is done (I05, I06). The
   connector isn't part of the end-to-end tests yet; its line protocol is pinned by the golden files.
 - [M4](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/plans/m04-typed-configuration.md):
