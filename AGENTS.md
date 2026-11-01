@@ -78,6 +78,10 @@ dotnet run --project .\RIoT2.Connector.InfluxDB\RIoT2.Connector.InfluxDB.csproj
 - Keep `RIoT2.Core` as a package reference. This repository currently pins `RIoT2.Core` `1.0.1`.
 - Keep `PackageReference` items versionless; package versions belong in `Directory.Packages.props`.
 - Do not commit or document real InfluxDB tokens or MQTT credentials.
+- Logging comes from `builder.AddRIoT2Logging()` (RIoT2.Core.Hosting): don't add Serilog sinks,
+  logging providers or `Logging` sections to `appsettings.json`; `RIOT2_LOG_FORMAT` and
+  `RIOT2_LOG_LEVEL` are the settings. Log through `ILogger`, and wrap work for one command or
+  trigger in `logger.BeginIdScope(LogScope.CorrelationId | LogScope.MessageId, id)`.
 
 ## Pitfalls
 

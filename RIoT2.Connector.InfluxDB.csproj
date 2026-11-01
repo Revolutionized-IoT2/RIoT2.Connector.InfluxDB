@@ -18,6 +18,7 @@
   <ItemGroup>
     <PackageReference Include="InfluxDB.Client" />
     <PackageReference Include="RIoT2.Core" />
+    <PackageReference Include="RIoT2.Core.Hosting" />
   </ItemGroup>
 
 </Project>

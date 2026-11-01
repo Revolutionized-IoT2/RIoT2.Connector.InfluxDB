@@ -45,6 +45,11 @@ Set these variables:
 - `RIOT2_INFLUXDB_BUCKET`
 - `RIOT2_INFLUXDB_ORGANIZATION`
 - `RIOT2_HANDLE_COMMANDS` (optional, `true` enables command writes)
+- `RIOT2_LOG_FORMAT` (optional, `text` or `json`) and `RIOT2_LOG_LEVEL` (optional, default
+  `Information`)
+
+Logs go to the console and to `Logs/RIoT2.log` (`/app/Logs` in the container), rolled daily and at
+50 MB, 14 files kept, through `AddRIoT2Logging()` from `RIoT2.Core.Hosting`.
 
 The full environment contract, ports and image details are in
 [env-vars.md](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/contracts/env-vars.md).

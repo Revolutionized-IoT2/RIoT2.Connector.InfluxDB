@@ -1,12 +1,18 @@
 using Microsoft.Extensions.Options;
 using RIoT2.Connector.InfluxDB.Services;
 using RIoT2.Connector.InfluxDB.Services.Interfaces;
+using RIoT2.Core.Hosting;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Console and Logs/RIoT2.log, text or JSON (RIOT2_LOG_FORMAT, RIOT2_LOG_LEVEL; design 7.4), the same
+// way as the other RIoT2 services.
+var loggerFactory = builder.AddRIoT2Logging("connector");
+
 // Every RIOT2_* setting is read and validated here, before anything uses it; an invalid setting
 // stops the start with one message that lists every problem.
-builder.Services.AddSingleton(Options.Create(InfluxConnectorOptions.Load(builder.Configuration)));
+builder.Services.AddSingleton(Options.Create(InfluxConnectorOptions.Load(builder.Configuration,
+    loggerFactory.CreateLogger("RIoT2.Connector.InfluxDB"))));
 
 // Add services to the container.
 builder.Services.AddSingleton<IConnectorConfigurationService, ConnectorConfigurationService>();
