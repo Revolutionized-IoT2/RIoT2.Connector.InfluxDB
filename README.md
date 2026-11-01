@@ -47,9 +47,16 @@ Set these variables:
 - `RIOT2_HANDLE_COMMANDS` (optional, `true` enables command writes)
 - `RIOT2_LOG_FORMAT` (optional, `text` or `json`) and `RIOT2_LOG_LEVEL` (optional, default
   `Information`)
+- `OTEL_EXPORTER_OTLP_ENDPOINT` (optional; the OTLP collector for metrics, such as
+  `http://otel-collector:4317`) and `RIOT2_TRACING` (optional, `true` also exports traces)
 
 Logs go to the console and to `Logs/RIoT2.log` (`/app/Logs` in the container), rolled daily and at
 50 MB, 14 files kept, through `AddRIoT2Logging()` from `RIoT2.Core.Hosting`.
+
+Metrics go out through `AddRIoT2Telemetry()` when the endpoint is set: `riot2.connector.messages`
+(by type and result), `riot2.connector.writes` (points, by outcome), `riot2.connector.queue_depth`,
+`riot2.mqtt.*`, ASP.NET Core and the runtime. Every name is in the
+[metrics contract](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/contracts/metrics.md).
 
 The full environment contract, ports and image details are in
 [env-vars.md](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/contracts/env-vars.md).

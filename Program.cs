@@ -14,6 +14,10 @@ var loggerFactory = builder.AddRIoT2Logging("connector");
 builder.Services.AddSingleton(Options.Create(InfluxConnectorOptions.Load(builder.Configuration,
     loggerFactory.CreateLogger("RIoT2.Connector.InfluxDB"))));
 
+// Metrics (riot2.connector.*, riot2.mqtt.*) and, with RIOT2_TRACING=true, traces over OTLP, only when
+// OTEL_EXPORTER_OTLP_ENDPOINT is set (design 7.4).
+builder.AddRIoT2Telemetry("connector", builder.Configuration[InfluxConnectorOptions.IdVariable], RIoT2.Core.Diagnostics.MeterNames.Connector);
+
 // Add services to the container.
 builder.Services.AddSingleton<IConnectorConfigurationService, ConnectorConfigurationService>();
 builder.Services.AddSingleton<InfluxDBService>();

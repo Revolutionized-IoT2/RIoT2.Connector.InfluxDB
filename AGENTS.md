@@ -82,6 +82,8 @@ dotnet run --project .\RIoT2.Connector.InfluxDB\RIoT2.Connector.InfluxDB.csproj
   logging providers or `Logging` sections to `appsettings.json`; `RIOT2_LOG_FORMAT` and
   `RIOT2_LOG_LEVEL` are the settings. Log through `ILogger`, and wrap work for one command or
   trigger in `logger.BeginIdScope(LogScope.CorrelationId | LogScope.MessageId, id)`.
+- Metrics come from `builder.AddRIoT2Telemetry()` (`OTEL_EXPORTER_OTLP_ENDPOINT`, `RIOT2_TRACING`);
+  a new `riot2.*` instrument is added to the hub's `contracts/metrics.md` and pinned in a test.
 
 ## Pitfalls
 

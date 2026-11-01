@@ -29,7 +29,11 @@ namespace RIoT2.Connector.InfluxDB.Services
             _bucket = configuration.Configuration.InfluxBucket;
             _org = configuration.Configuration.InfluxOrganization;
             _logger = logger;
+            ConnectorMetrics.Track(this);
         }
+
+        /// <summary>Points waiting to be written (<c>riot2.connector.queue_depth</c>).</summary>
+        public int QueueDepth => _queue.Reader.Count;
 
         public Task StartAsync(CancellationToken cancellationToken)
         {
@@ -63,14 +67,17 @@ namespace RIoT2.Connector.InfluxDB.Services
                     try
                     {
                         await _writer.WritePointsAsync(batch, _bucket, _org, _shutdown.Token);
+                        ConnectorMetrics.Write(ConnectorMetrics.Written, batch.Count);
                     }
                     catch (Exception) when (_shutdown.IsCancellationRequested)
                     {
+                        ConnectorMetrics.Write(ConnectorMetrics.Discarded, batch.Count);
                         _logger.LogWarning("InfluxDB shutdown interrupted a batch of {Count} points; delivery is unknown and is not replayed", batch.Count);
                         break;
                     }
                     catch (Exception error)
                     {
+                        ConnectorMetrics.Write(ConnectorMetrics.Failed, batch.Count);
                         _logger.LogError(error, "InfluxDB write failed for {Count} points; no automatic retry", batch.Count);
                     }
                 }
@@ -84,6 +91,7 @@ namespace RIoT2.Connector.InfluxDB.Services
                 var abandoned = 0;
                 while (_queue.Reader.TryRead(out _))
                     abandoned++;
+                ConnectorMetrics.Write(ConnectorMetrics.Discarded, abandoned);
                 if (abandoned > 0)
                     _logger.LogWarning("Discarded {Count} queued InfluxDB points during shutdown; no automatic replay", abandoned);
             }

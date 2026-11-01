@@ -1,4 +1,5 @@
-﻿using RIoT2.Connector.InfluxDB.Services.Interfaces;
+﻿using InfluxDB.Client.Writes;
+using RIoT2.Connector.InfluxDB.Services.Interfaces;
 using RIoT2.Core;
 using RIoT2.Core.Models;
 using RIoT2.Core.Utils;
@@ -104,12 +105,11 @@ namespace RIoT2.Connector.InfluxDB.Services
                     var report = Report.Create(mqttEventArgs.Message);
                     if (report == null)
                     {
+                        ConnectorMetrics.Message("report", ConnectorMetrics.Invalid);
                         _logger.LogWarning("Couldn't create Report {mqttEventArgs.Message}", mqttEventArgs.Message);
                         return;
                     }
-                    var point = _mqttMessageHandler.HandleReport(report);
-                    if (point != null)
-                        _influxDB.Write(point);
+                    Queue("report", () => _mqttMessageHandler.HandleReport(report));
                 }
 
                 //save conmmands to influxDB
@@ -118,17 +118,37 @@ namespace RIoT2.Connector.InfluxDB.Services
                     var command = Command.Create(mqttEventArgs.Message);
                     if (command == null)
                     {
+                        ConnectorMetrics.Message("command", ConnectorMetrics.Invalid);
                         _logger.LogWarning("Couldn't create Command {mqttEventArgs.Message}", mqttEventArgs.Message);
                         return;
                     }
-                    var point = _mqttMessageHandler.HandleCommand(command);
-                    if (point != null) 
-                        _influxDB.Write(point);
+                    Queue("command", () => _mqttMessageHandler.HandleCommand(command));
                 }
             }
             catch (Exception x)
             {
                 _logger.LogError(x, "Could not process mqtt message {mqttEventArgs.Message}", mqttEventArgs.Message);
+            }
+        }
+
+        // Converts a message to a point and queues it for InfluxDB, counting the result.
+        private void Queue(string type, Func<PointData> convert)
+        {
+            try
+            {
+                var point = convert();
+                if (point == null)
+                {
+                    ConnectorMetrics.Message(type, ConnectorMetrics.Ignored);
+                    return;
+                }
+                _influxDB.Write(point);
+                ConnectorMetrics.Message(type, ConnectorMetrics.Queued);
+            }
+            catch (Exception)
+            {
+                ConnectorMetrics.Message(type, ConnectorMetrics.Failed);
+                throw;
             }
         }
     }
