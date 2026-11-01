@@ -5,6 +5,12 @@ then builds and pushes the Docker image to GitHub Container Registry.
 
 ## [Unreleased]
 
+## [1.5.0] - 2026-11-01
+
+System.Text.Json on the wire ([I25](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/increments/phase-2.md#i25-systemtextjson-on-the-wire-m)), with RIoT2.Core 1.11.0. No port, user, volume or
+variable changes; the reports, templates and line protocol are the same (the InfluxDB golden
+tests pass unchanged).
+
 ## [1.4.0] - 2026-11-01
 
 Metrics ([I22](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/increments/phase-2.md#i22-metrics-m), design 7.4 phase 4), with RIoT2.Core 1.10.0.
