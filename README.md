@@ -143,7 +143,7 @@ Durable spooling and the connector SDK are planned in
 - To release, push a tag `x.y.z` on `main`. The release workflow validates, then publishes the
   Docker image to GitHub Container Registry ([CI guide](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/guides/ci.md)).
 - This repository references the `RIoT2.Core.Contracts`, `RIoT2.Core.Mqtt` and `RIoT2.Core.Hosting`
-  packages `1.14.0` from GitHub Packages: the contract and the MQTT client, without the device SDK,
+  packages `1.14.1` from GitHub Packages: the contract and the MQTT client, without the device SDK,
   the node runtime or Quartz.
 - [M8](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/plans/m08-dotnet10-migration.md)
   completed the target-framework migration; nullable and threading-analyzer practice steps remain

@@ -76,7 +76,7 @@ dotnet run --project .\RIoT2.Connector.InfluxDB\RIoT2.Connector.InfluxDB.csproj
 - Only write boolean, numeric and entity boolean/numeric leaf values. Top-level text/text-array
   values and non-numeric entity leaves are skipped.
 - Keep the Core packages as package references, and only the narrow ones (plan M1 step 4): this
-  repository pins `RIoT2.Core.Contracts`, `RIoT2.Core.Mqtt` and `RIoT2.Core.Hosting` `1.14.0`. Don't
+  repository pins `RIoT2.Core.Contracts`, `RIoT2.Core.Mqtt` and `RIoT2.Core.Hosting` `1.14.1`. Don't
   add the `RIoT2.Core` facade or `RIoT2.Core.Node`.
 - Keep `PackageReference` items versionless; package versions belong in `Directory.Packages.props`.
 - Do not commit or document real InfluxDB tokens or MQTT credentials.
@@ -99,7 +99,7 @@ dotnet run --project .\RIoT2.Connector.InfluxDB\RIoT2.Connector.InfluxDB.csproj
   retried; shutdown can abandon queued or in-flight points.
 - The health endpoints only prove the ASP.NET Core process is running; they do not prove MQTT,
   template loading or InfluxDB delivery.
-- The Core packages `1.14.0` are published. Use `C:\Src\RIoT2\.localfeed` as an extra NuGet source only
+- The Core packages `1.14.1` are published. Use `C:\Src\RIoT2\.localfeed` as an extra NuGet source only
   to try an unreleased Core version.
 
 ## Related work
