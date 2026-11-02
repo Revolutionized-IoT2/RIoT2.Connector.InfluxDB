@@ -2,6 +2,7 @@ using Microsoft.Extensions.Options;
 using RIoT2.Connector.InfluxDB.Services;
 using RIoT2.Connector.InfluxDB.Services.Interfaces;
 using RIoT2.Core.Hosting;
+using RIoT2.Core.Security;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,8 +12,12 @@ var loggerFactory = builder.AddRIoT2Logging("connector");
 
 // Every RIOT2_* setting is read and validated here, before anything uses it; an invalid setting
 // stops the start with one message that lists every problem.
-builder.Services.AddSingleton(Options.Create(InfluxConnectorOptions.Load(builder.Configuration,
-    loggerFactory.CreateLogger("RIoT2.Connector.InfluxDB"))));
+var connectorOptions = InfluxConnectorOptions.Load(builder.Configuration, loggerFactory.CreateLogger("RIoT2.Connector.InfluxDB"));
+builder.Services.AddSingleton(Options.Create(connectorOptions));
+
+// The optional security mode's seams (design 7.5, phase S0); with RIOT2_SECURITY_MODE off, the only mode
+// this version accepts, nothing is enforced.
+builder.Services.AddRIoT2Security(connectorOptions.Security);
 
 // Metrics (riot2.connector.*, riot2.mqtt.*) and, with RIOT2_TRACING=true, traces over OTLP, only when
 // OTEL_EXPORTER_OTLP_ENDPOINT is set (design 7.4).
@@ -22,7 +27,11 @@ builder.AddRIoT2Telemetry("connector", builder.Configuration[InfluxConnectorOpti
 builder.Services.AddSingleton<IConnectorConfigurationService, ConnectorConfigurationService>();
 builder.Services.AddSingleton<InfluxDBService>();
 builder.Services.AddSingleton<IInfluxDBService>(services => services.GetRequiredService<InfluxDBService>());
-builder.Services.AddHttpClient("templates", client => client.Timeout = TimeSpan.FromSeconds(30));
+// Template requests to the orchestrator send X-RIoT2-Key when RIOT2_API_KEY is set, and pass the
+// outbound URL policy.
+builder.Services.AddHttpClient("templates", client => client.Timeout = TimeSpan.FromSeconds(30))
+    .AddHttpMessageHandler(() => new ApiKeyHandler(connectorOptions.Security.ApiKey))
+    .AddHttpMessageHandler(services => new OutboundUrlPolicyHandler(services.GetRequiredService<IOutboundUrlPolicy>(), OutboundPurposes.Orchestrator));
 builder.Services.AddSingleton<ITemplateService>(services =>
     new TemplateService(services.GetRequiredService<IHttpClientFactory>().CreateClient("templates")));
 builder.Services.AddSingleton<IMqttMessageHandlerService, MqttMessageHandlerService>();
@@ -35,9 +44,11 @@ var app = builder.Build();
 
 // Configure the HTTP request pipeline.
 
+app.UseRIoT2Security();
+
 var health = () => Results.Ok(new { status = "ok" });
-app.MapGet("/health", health);
-app.MapGet("/healthz", health);
+app.MapGet("/health", health).AllowAnonymous();
+app.MapGet("/healthz", health).AllowAnonymous();
 
 app.Run();
 

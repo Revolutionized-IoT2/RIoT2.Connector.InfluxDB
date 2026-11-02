@@ -5,6 +5,17 @@ then builds and pushes the Docker image to GitHub Container Registry.
 
 ## [Unreleased]
 
+## [1.7.0] - 2026-11-02
+
+The optional security mode's seams ([I34](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/increments/phase-2.md#i34-security-seams-with-the-mode-fixed-at-off-m), [design 7.5](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/design/security-mode.md) phase S0), with RIoT2.Core 1.18.0. No port, user,
+volume or JSON changes; with the default mode `off` nothing is enforced.
+
+- Added: `RIOT2_SECURITY_MODE` (only `off` is accepted; `audit` or `on` stops the start),
+  `RIOT2_SECURITY_FEATURES` and `RIOT2_API_KEY`, sent in `X-RIoT2-Key` when the templates are
+  loaded from the orchestrator. `/health` and `/healthz` stay anonymous.
+- Added: `RIOT2_MQTT_TLS` and `RIOT2_MQTT_CA_FILE` connect to a TLS broker.
+- Changed: the template client passes the outbound URL policy (allow-all while `off`).
+
 ## [1.6.3] - 2026-11-02
 
 Supply chain ([I33](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/increments/phase-2.md#i33-supply-chain-s)). No port, user, volume, variable or JSON changes.

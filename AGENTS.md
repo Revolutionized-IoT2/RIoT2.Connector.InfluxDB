@@ -58,7 +58,8 @@ dotnet run --project .\RIoT2.Connector.InfluxDB\RIoT2.Connector.InfluxDB.csproj
   mapping messages.
 - [http-api.md](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/contracts/http-api.md):
   `TemplateService` consumes `/api/nodes/report/templates`, `/api/nodes/command/templates` and
-  `/api/nodes/variable/templates`; `Program.cs` serves `/health` and `/healthz`.
+  `/api/nodes/variable/templates` (the `templates` client sends `X-RIoT2-Key` from `RIOT2_API_KEY`);
+  `Program.cs` serves `/health` and `/healthz`, anonymous (`AddRIoT2Security`, design 7.5).
 - [env-vars.md](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/contracts/env-vars.md):
   `InfluxConnectorOptions` defines the connector and InfluxDB variables; nothing else reads the
   environment.
@@ -76,7 +77,7 @@ dotnet run --project .\RIoT2.Connector.InfluxDB\RIoT2.Connector.InfluxDB.csproj
 - Only write boolean, numeric and entity boolean/numeric leaf values. Top-level text/text-array
   values and non-numeric entity leaves are skipped.
 - Keep the Core packages as package references, and only the narrow ones (plan M1 step 4): this
-  repository pins `RIoT2.Core.Contracts`, `RIoT2.Core.Mqtt` and `RIoT2.Core.Hosting` `1.17.0`. Don't
+  repository pins `RIoT2.Core.Contracts`, `RIoT2.Core.Mqtt` and `RIoT2.Core.Hosting` `1.18.0`. Don't
   add the `RIoT2.Core` facade or `RIoT2.Core.Node`.
 - Keep `PackageReference` items versionless; package versions belong in `Directory.Packages.props`.
 - Do not commit or document real InfluxDB tokens or MQTT credentials.
@@ -99,7 +100,7 @@ dotnet run --project .\RIoT2.Connector.InfluxDB\RIoT2.Connector.InfluxDB.csproj
   retried; shutdown can abandon queued or in-flight points.
 - The health endpoints only prove the ASP.NET Core process is running; they do not prove MQTT,
   template loading or InfluxDB delivery.
-- The Core packages `1.17.0` are published. Use `C:\Src\RIoT2\.localfeed` as an extra NuGet source only
+- The Core packages `1.18.0` are published. Use `C:\Src\RIoT2\.localfeed` as an extra NuGet source only
   to try an unreleased Core version.
 
 ## Related work

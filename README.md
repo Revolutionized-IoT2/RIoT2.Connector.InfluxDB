@@ -39,7 +39,10 @@ Set these variables:
 
 - `RIOT2_CONNECTOR_ID`
 - `RIOT2_MQTT_IP`
-- `RIOT2_MQTT_USERNAME` and `RIOT2_MQTT_PASSWORD` (optional for anonymous brokers)
+- `RIOT2_MQTT_USERNAME` and `RIOT2_MQTT_PASSWORD` (optional for anonymous brokers);
+  `RIOT2_MQTT_TLS` and `RIOT2_MQTT_CA_FILE` (optional, TLS to the broker)
+- `RIOT2_SECURITY_MODE` (optional, only `off` yet) and `RIOT2_API_KEY` (optional, sent to the
+  orchestrator): the optional security mode ([design 7.5](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/design/security-mode.md))
 - `RIOT2_INFLUXDB_HOST`
 - `RIOT2_INFLUXDB_TOKEN`
 - `RIOT2_INFLUXDB_BUCKET`
@@ -143,7 +146,7 @@ Durable spooling and the connector SDK are planned in
 - To release, push a tag `x.y.z` on `main`. The release workflow validates, then publishes the
   Docker image to GitHub Container Registry ([CI guide](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/guides/ci.md)).
 - This repository references the `RIoT2.Core.Contracts`, `RIoT2.Core.Mqtt` and `RIoT2.Core.Hosting`
-  packages `1.17.0` from GitHub Packages: the contract and the MQTT client, without the device SDK,
+  packages `1.18.0` from GitHub Packages: the contract and the MQTT client, without the device SDK,
   the node runtime or Quartz.
 - [M8](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/plans/m08-dotnet10-migration.md)
   completed the target-framework migration; nullable reference types (I32) and the threading
