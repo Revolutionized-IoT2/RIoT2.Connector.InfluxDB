@@ -5,6 +5,19 @@ then builds and pushes the Docker image to GitHub Container Registry.
 
 ## [Unreleased]
 
+## [1.10.0] - 2026-11-02
+
+Listed as a connector ([I39](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/increments/phase-3-4.md#i39-connectors-in-the-ui-and-a-prometheus-exporter-m), [design 7.3](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/design/connector-sdk.md) phase 3), with RIoT2.Connector.Sdk 1.22.0. No port, user or volume
+changes; the line protocol is unchanged.
+
+- Changed: the presence announces `nodeType` 4 (connector), the name `InfluxDB` (was `InfluxDBConnector`)
+  and the connector's and SDK's versions; the UI lists it under "Connectors".
+- Added: `RIOT2_CONNECTOR_URL` (optional) lets the orchestrator read `/health` for the UI;
+  `RIOT2_CONNECTOR_NAME` (optional) renames it.
+- Changed: `EntityFlattener` moved into the SDK.
+- Build: the image is built with the release version (`VERSION` build argument), which the presence
+  announces; it said `1.0.0` before.
+
 ## [1.9.0] - 2026-11-02
 
 The disk spool ([I38](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/increments/phase-3-4.md#i38-connector-spool-m), [design 7.3](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/design/connector-sdk.md) phase 2), with

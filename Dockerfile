@@ -23,12 +23,15 @@ RUN --mount=type=secret,id=nuget_token,required=true \
        dotnet restore "./RIoT2.Connector.InfluxDB.csproj"
 COPY . .
 WORKDIR "/src/."
-RUN dotnet build "./RIoT2.Connector.InfluxDB.csproj" -c $BUILD_CONFIGURATION --no-restore -o /app/build
+# The release's version (docker-publish.yml), which the connector announces in its presence (design 7.3).
+ARG VERSION=0.0.0-local
+RUN dotnet build "./RIoT2.Connector.InfluxDB.csproj" -c $BUILD_CONFIGURATION --no-restore -o /app/build -p:Version=$VERSION
 
 # This stage is used to publish the service project to be copied to the final stage
 FROM build AS publish
 ARG BUILD_CONFIGURATION=Release
-RUN dotnet publish "./RIoT2.Connector.InfluxDB.csproj" -c $BUILD_CONFIGURATION --no-restore -o /app/publish /p:UseAppHost=false
+ARG VERSION=0.0.0-local
+RUN dotnet publish "./RIoT2.Connector.InfluxDB.csproj" -c $BUILD_CONFIGURATION --no-restore -o /app/publish /p:UseAppHost=false -p:Version=$VERSION
 
 # This stage is used in production or when running from VS in regular mode (Default when not using the Debug configuration)
 FROM base AS final

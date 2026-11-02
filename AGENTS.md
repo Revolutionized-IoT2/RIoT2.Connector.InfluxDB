@@ -46,7 +46,6 @@ dotnet run --project .\RIoT2.Connector.InfluxDB\RIoT2.Connector.InfluxDB.csproj
 | `Services/InfluxConnectorOptions.cs` | The `RIOT2_INFLUXDB_*` settings; `Load` reads them with the SDK's shared settings, as the start does |
 | `Services/InfluxSink.cs` | `IConnectorSink`: maps a batch and writes it; InfluxDB's answers become retry or rejection; `CheckHealthAsync` pings InfluxDB |
 | `Services/InfluxPointMapper.cs` | Report or command to an InfluxDB point |
-| `Services/EntityFlattener.cs` | Recursive entity field flattening |
 | `Dockerfile` | `net10.0` image, web port 8080, `/app/Data/spool` owned by `app`; base images pinned by digest (Renovate updates them) |
 
 ## Contracts consumed here
@@ -75,7 +74,7 @@ dotnet run --project .\RIoT2.Connector.InfluxDB\RIoT2.Connector.InfluxDB.csproj
   (`Golden/influx-line-protocol.txt`). Commands use `ConnectorMessage.ReceivedUtc`.
 - Only write boolean, numeric and entity boolean/numeric leaf values. Top-level text/text-array
   values and non-numeric entity leaves are skipped.
-- Reference Core only through `RIoT2.Connector.Sdk` (`1.21.0`, set in `Directory.Packages.props`);
+- Reference Core only through `RIoT2.Connector.Sdk` (`1.22.0`, set in `Directory.Packages.props`);
   don't add the `RIoT2.Core` facade or `RIoT2.Core.Node`. Keep `PackageReference` items versionless.
 - Do not commit or document real InfluxDB tokens or MQTT credentials.
 - Logging and metrics come from the SDK (`AddRIoT2Logging`, `AddRIoT2Telemetry`): don't add Serilog
@@ -84,8 +83,9 @@ dotnet run --project .\RIoT2.Connector.InfluxDB\RIoT2.Connector.InfluxDB.csproj
 ## Pitfalls
 
 - `RIOT2_HANDLE_COMMANDS` uses `bool.TryParse`; only values such as `true` enable command writes.
-- The connector announces itself as `InfluxDBConnector` with `NodeType` `Unknown`;
-  `NodeType.Connector` comes with design 7.3 phase 3.
+- The connector announces itself as `InfluxDB` (`RIOT2_CONNECTOR_NAME`) with `NodeType.Connector`; without
+  `RIOT2_CONNECTOR_URL` the UI lists it without its health. Entity fields are flattened by the SDK's
+  `EntityFlattener` (shared with the Prometheus exporter).
 - The spool (`/app/Data/spool`, on by default) is lost with the container unless `/app/Data` is a
   volume; compose mounts `influxdb-connector-data`. Delivery from it is at least once: a batch
   interrupted by stopping is written again, which InfluxDB treats as the same point.

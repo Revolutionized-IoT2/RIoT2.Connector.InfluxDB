@@ -3,7 +3,7 @@
 InfluxDB 2 connector for the [RIoT2](https://github.com/Revolutionized-IoT2) platform. It listens
 to RIoT2 MQTT reports, optionally listens to commands, resolves template metadata from the
 orchestrator, and writes time-series points for Grafana and other InfluxDB consumers. It is the
-reference connector on the [connector SDK](https://github.com/Revolutionized-IoT2/RIoT2.Core/blob/main/Connector/README.md) (Core 1.21.0, [design 7.3](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/design/connector-sdk.md)): the SDK
+reference connector on the [connector SDK](https://github.com/Revolutionized-IoT2/RIoT2.Core/blob/main/Connector/README.md) (Core 1.22.0, [design 7.3](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/design/connector-sdk.md)): the SDK
 does the settings, MQTT, templates, queue and disk spool; this repository has the InfluxDB sink.
 
 - Type: ASP.NET Core service
@@ -50,6 +50,8 @@ Set these variables:
 - `RIOT2_INFLUXDB_BUCKET`
 - `RIOT2_INFLUXDB_ORGANIZATION`
 - `RIOT2_HANDLE_COMMANDS` (optional, `true` enables command writes)
+- `RIOT2_CONNECTOR_URL` (optional): where the orchestrator reaches the connector, so the UI's connector list
+  shows its health; `RIOT2_CONNECTOR_NAME` (optional, default `InfluxDB`): the name there
 - `RIOT2_CONNECTOR_SPOOL` (optional, default `true`), `RIOT2_CONNECTOR_SPOOL_MAX_MB` (optional,
   default 100) and `RIOT2_CONNECTOR_SPOOL_MAX_AGE_DAYS` (optional, default 7): the disk spool, see
   [Delivery behaviour](#delivery-behaviour)
@@ -166,7 +168,7 @@ InfluxDB client for the application lifetime.
 - Release notes are in [CHANGELOG.md](CHANGELOG.md).
 - To release, push a tag `x.y.z` on `main`. The release workflow validates, then publishes the
   Docker image to GitHub Container Registry ([CI guide](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/guides/ci.md)).
-- This repository references `RIoT2.Connector.Sdk` `1.21.0` from GitHub Packages, which brings
+- This repository references `RIoT2.Connector.Sdk` `1.22.0` from GitHub Packages, which brings
   the contract, the MQTT client and the hosting, without the device SDK, the node runtime or Quartz.
 - [M8](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/plans/m08-dotnet10-migration.md)
   completed the target-framework migration; nullable reference types (I32) and the threading
