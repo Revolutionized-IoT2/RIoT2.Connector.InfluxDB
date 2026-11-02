@@ -17,10 +17,8 @@
 
   <ItemGroup>
     <PackageReference Include="InfluxDB.Client" />
-    <!-- The contract and the MQTT client only: no device SDK, node runtime or Quartz (plan M1 step 4). -->
-    <PackageReference Include="RIoT2.Core.Contracts" />
-    <PackageReference Include="RIoT2.Core.Hosting" />
-    <PackageReference Include="RIoT2.Core.Mqtt" />
+    <!-- The connector SDK (design 7.3); it brings Contracts, Mqtt, Http and Hosting, not the device SDK or Quartz. -->
+    <PackageReference Include="RIoT2.Connector.Sdk" />
   </ItemGroup>
 
 </Project>

@@ -5,6 +5,25 @@ then builds and pushes the Docker image to GitHub Container Registry.
 
 ## [Unreleased]
 
+## [1.8.0] - 2026-11-02
+
+The connector SDK ([I37](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/increments/phase-3-4.md#i37-connector-sdk-m), [design 7.3](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/design/connector-sdk.md) phase 1),
+with RIoT2.Connector.Sdk 1.20.0. No port, user, volume or variable changes; the line protocol is
+unchanged.
+
+- Changed: the generic code (settings, MQTT, templates, queue, metrics) moved into the SDK.
+  `Program.cs` is `AddRIoT2Connector<InfluxSink, InfluxConnectorOptions>(...)`; `InfluxSink` maps
+  and writes, with `InfluxPointMapper`. `InfluxConnectorOptions` holds only the `RIOT2_INFLUXDB_*`
+  settings.
+- Changed: writes are batched (up to 100, or after 1 s). A failed write is retried with backoff
+  instead of dropped (400, 413 and 422 are dropped), and reports received before the templates
+  are written once they arrive instead of being skipped. A message that can't be mapped (no value,
+  a time stamp out of range) is skipped and counted `ignored`; the rest of its batch is written.
+- Changed: commands are stamped with the time they were received, not when they were mapped.
+- Changed: `riot2.connector.writes` counts messages by `written`, `retried`, `rejected` and
+  `discarded` (it counted points by `written`, `failed` and `discarded`); `ignored` messages are
+  counted when the sink skips them.
+
 ## [1.7.0] - 2026-11-02
 
 The optional security mode's seams ([I34](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/increments/phase-2.md#i34-security-seams-with-the-mode-fixed-at-off-m), [design 7.5](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/design/security-mode.md) phase S0), with RIoT2.Core 1.18.0. No port, user,

@@ -8,9 +8,12 @@ workspace map, platform-wide rules and the documentation rules. In the local wor
 
 ## What this is
 
-An ASP.NET Core connector that subscribes to RIoT2 MQTT reports and optionally commands, maps them
-through orchestrator templates, and writes numeric, boolean and entity leaf values to InfluxDB 2.
-It is the current reference connector until the planned connector SDK exists.
+An ASP.NET Core connector that writes RIoT2 reports (and optionally commands) to InfluxDB 2: the
+reference connector on the connector SDK (`RIoT2.Connector.Sdk` in RIoT2.Core,
+[design 7.3](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/design/connector-sdk.md),
+[SDK README](https://github.com/Revolutionized-IoT2/RIoT2.Core/blob/main/Connector/README.md)). The SDK
+does the settings, MQTT, the orchestrator's templates, the queue, batching, retry and metrics; this
+repository has the InfluxDB sink and its settings.
 
 ## Commands
 
@@ -32,92 +35,68 @@ dotnet run --project .\RIoT2.Connector.InfluxDB\RIoT2.Connector.InfluxDB.csproj
 - Every push runs `.github/workflows/ci.yml` (build, image build, secret scan). To release, push
   a tag `x.y.z` on `main`: `release.yml` validates, then pushes
   `ghcr.io/revolutionized-iot2/riot2-influxdb:latest` and `:<tag>` ([CI guide](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/guides/ci.md)).
+- To try an unreleased Core (SDK) version, pack it into `C:\Src\RIoT2\.localfeed` and restore with
+  that folder as an extra NuGet source.
 
 ## Layout
 
 | Path | Contents |
 |---|---|
-| `Program.cs` | Service registrations and `/health`, `/healthz` endpoints |
-| `Models/` | Connector configuration and template snapshot models |
-| `Services/InfluxConnectorOptions.cs` | Every `RIOT2_*` setting the connector reads, validated at startup with Core's `SettingsReader` |
-| `Services/ConnectorConfigurationService.cs` | Connector configuration from `IOptions<InfluxConnectorOptions>` |
-| `Services/ConnectorMqttService.cs` | MQTT subscriptions, online announcement and message dispatch |
-| `Services/TemplateService.cs` | Orchestrator template catalog loading |
-| `Services/MqttMessageHandlerService.cs` | Report/command to InfluxDB point mapping |
+| `Program.cs` | `AddRIoT2Connector<InfluxSink, InfluxConnectorOptions>(...)` and `MapRIoT2Connector()` (SDK) |
+| `Services/InfluxConnectorOptions.cs` | The `RIOT2_INFLUXDB_*` settings; `Load` reads them with the SDK's shared settings, as the start does |
+| `Services/InfluxSink.cs` | `IConnectorSink`: maps a batch and writes it; InfluxDB's answers become retry or rejection |
+| `Services/InfluxPointMapper.cs` | Report or command to an InfluxDB point |
 | `Services/EntityFlattener.cs` | Recursive entity field flattening |
-| `Services/InfluxDBService.cs` | Bounded in-memory queue and batch writer |
 | `Dockerfile` | `net10.0` image, web port 8080; base images pinned by digest (Renovate updates them) |
 
 ## Contracts consumed here
 
-- [mqtt-topics.md](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/contracts/mqtt-topics.md):
-  `ConnectorMqttService` subscribes to `riot2/node/+/report`, optionally
-  `riot2/node/+/command`, connector configuration, and orchestrator online messages.
-- [configuration.md](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/contracts/configuration.md):
-  `TemplateService` loads report, command and variable templates from the orchestrator before
-  mapping messages.
-- [http-api.md](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/contracts/http-api.md):
-  `TemplateService` consumes `/api/nodes/report/templates`, `/api/nodes/command/templates` and
-  `/api/nodes/variable/templates` (the `templates` client sends `X-RIoT2-Key` from `RIOT2_API_KEY`);
-  `Program.cs` serves `/health` and `/healthz`, anonymous (`AddRIoT2Security`, design 7.5).
+- [mqtt-topics.md](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/contracts/mqtt-topics.md),
+  [configuration.md](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/contracts/configuration.md)
+  and [http-api-services.md](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/contracts/http-api-services.md):
+  through the SDK (`ConnectorMqttService`, `TemplateCatalog`, `/health`).
 - [env-vars.md](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/contracts/env-vars.md):
-  `InfluxConnectorOptions` defines the connector and InfluxDB variables; nothing else reads the
-  environment.
+  `InfluxConnectorOptions` and the SDK's `ConnectorOptions`; nothing else reads the environment.
+- [metrics.md](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/contracts/metrics.md):
+  the SDK records `riot2.connector.*`; the sink calls `ConnectorMetrics.RecordIgnored` for messages
+  it doesn't write.
 
 ## Rules
 
-- Do not publish commands directly to MQTT from this connector. It is a sink; bidirectional
-  connector work belongs to the planned SDK and command API.
-- Do not invent retries or durable replay without following [design 7.3](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/design/connector-sdk.md).
-  The current writer has an explicit volatile delivery policy.
-- Keep writes non-blocking from MQTT callbacks. MQTT handlers enqueue points and let
-  `InfluxDBService` own batching and HTTP writes.
-- Keep the template snapshot atomic: reports/commands/variables become visible together only after
-  all three HTTP responses succeed and validate.
+- Do not publish commands to MQTT from this connector. It is a sink; connectors that write back use
+  the SDK's planned `IRiot2CommandClient` and `POST /api/v2/commands`.
+- Generic behaviour (queue, batching, retry, shutdown, MQTT, templates) belongs in the SDK, not
+  here. This repository maps and writes.
+- The sink throws `TransientSinkException` for anything that may pass (network, timeouts, 401,
+  403, 404, 429, 5xx, templates not loaded) and `SinkRejectedException` only when InfluxDB refuses
+  the data (400, 413, 422). A wrong exception type either loses data or stalls the queue.
+- The line protocol is a contract: RIoT2.Tests `GoldenInfluxTests` pins it for every golden message
+  (`Golden/influx-line-protocol.txt`). Commands use `ConnectorMessage.ReceivedUtc`.
 - Only write boolean, numeric and entity boolean/numeric leaf values. Top-level text/text-array
   values and non-numeric entity leaves are skipped.
-- Keep the Core packages as package references, and only the narrow ones (plan M1 step 4): this
-  repository pins `RIoT2.Core.Contracts`, `RIoT2.Core.Mqtt` and `RIoT2.Core.Hosting` `1.18.0`. Don't
-  add the `RIoT2.Core` facade or `RIoT2.Core.Node`.
-- Keep `PackageReference` items versionless; package versions belong in `Directory.Packages.props`.
+- Reference Core only through `RIoT2.Connector.Sdk` (`1.20.0`, set in `Directory.Packages.props`);
+  don't add the `RIoT2.Core` facade or `RIoT2.Core.Node`. Keep `PackageReference` items versionless.
 - Do not commit or document real InfluxDB tokens or MQTT credentials.
-- Logging comes from `builder.AddRIoT2Logging()` (RIoT2.Core.Hosting): don't add Serilog sinks,
-  logging providers or `Logging` sections to `appsettings.json`; `RIOT2_LOG_FORMAT` and
-  `RIOT2_LOG_LEVEL` are the settings. Log through `ILogger`, and wrap work for one command or
-  trigger in `logger.BeginIdScope(LogScope.CorrelationId | LogScope.MessageId, id)`.
-- Metrics come from `builder.AddRIoT2Telemetry()` (`OTEL_EXPORTER_OTLP_ENDPOINT`, `RIOT2_TRACING`);
-  a new `riot2.*` instrument is added to the hub's `contracts/metrics.md` and pinned in a test.
+- Logging and metrics come from the SDK (`AddRIoT2Logging`, `AddRIoT2Telemetry`): don't add Serilog
+  sinks, logging providers or `Logging` sections to `appsettings.json`.
 
 ## Pitfalls
 
 - `RIOT2_HANDLE_COMMANDS` uses `bool.TryParse`; only values such as `true` enable command writes.
-  Anything else means false.
-- The connector announces itself with `Name = "InfluxDBConnector"` and leaves `NodeType` as the
-  Core default (`Unknown`). Planned `NodeType.Connector` does not exist yet.
-- Reports use the report's Unix-seconds timestamp. Commands have no source timestamp and are
-  stamped at receipt/mapping time.
-- The queue is bounded to 1000 points and batches up to 100. Failed HTTP writes are logged and not
-  retried; shutdown can abandon queued or in-flight points.
-- The health endpoints only prove the ASP.NET Core process is running; they do not prove MQTT,
-  template loading or InfluxDB delivery.
-- The Core packages `1.18.0` are published. Use `C:\Src\RIoT2\.localfeed` as an extra NuGet source only
-  to try an unreleased Core version.
+- The connector announces itself as `InfluxDBConnector` with `NodeType` `Unknown`;
+  `NodeType.Connector` comes with design 7.3 phase 3.
+- The queue holds 1000 messages in memory: a long outage refuses new ones, and a restart loses what
+  is queued, until the spool (design 7.3 phase 2, I38).
+- The health endpoints only prove the process is running; they don't check MQTT, the templates or
+  InfluxDB.
 
 ## Related work
 
 - [Backlog item 2](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/backlog/open-issues.md):
-  Influx writes are lost on outage until a durable spool exists.
-- Backlog item 14 (typed validated configuration) is done (I07).
-- Backlog item 17 (cross-repository contract and integration tests) is done (I05, I06). The
-  connector isn't part of the end-to-end tests yet; its line protocol is pinned by the golden files.
-- [M4](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/plans/m04-typed-configuration.md):
-  common options and validation.
+  the remaining outage loss, fixed by the spool (I38).
 - [M7](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/plans/m07-contract-integration-tests.md):
-  golden messages and in-process integration harness.
-- [M8](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/plans/m08-dotnet10-migration.md):
-  completed the `net10.0` migration; nullable reference types (I32) and the threading analyzers
-  (I31) fail CI on a warning.
+  golden messages; the connector isn't part of the end-to-end tests yet.
 - [Design 7.1](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/design/reliable-delivery.md):
-  command API and delivery semantics that future bidirectional connectors should use.
+  the command API future bidirectional connectors use.
 - [Design 7.3](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/design/connector-sdk.md):
-  connector SDK; this repository becomes the reference connector.
+  the connector SDK.
