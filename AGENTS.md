@@ -46,7 +46,7 @@ dotnet run --project .\RIoT2.Connector.InfluxDB\RIoT2.Connector.InfluxDB.csproj
 | `Services/MqttMessageHandlerService.cs` | Report/command to InfluxDB point mapping |
 | `Services/EntityFlattener.cs` | Recursive entity field flattening |
 | `Services/InfluxDBService.cs` | Bounded in-memory queue and batch writer |
-| `Dockerfile` | `net10.0` image, web port 8080 |
+| `Dockerfile` | `net10.0` image, web port 8080; base images pinned by digest (Renovate updates them) |
 
 ## Contracts consumed here
 
