@@ -45,12 +45,12 @@ namespace RIoT2.Connector.InfluxDB.Services
         }
 
         public static void Message(string type, string result) =>
-            Messages.Add(1, new KeyValuePair<string, object>("type", type), new KeyValuePair<string, object>("result", result));
+            Messages.Add(1, new KeyValuePair<string, object?>("type", type), new KeyValuePair<string, object?>("result", result));
 
         public static void Write(string outcome, int points)
         {
             if (points > 0)
-                Writes.Add(points, new KeyValuePair<string, object>("outcome", outcome));
+                Writes.Add(points, new KeyValuePair<string, object?>("outcome", outcome));
         }
 
         /// <summary>Measures <paramref name="writer"/>'s queue in <c>riot2.connector.queue_depth</c> while it lives.</summary>

@@ -14,13 +14,14 @@ namespace RIoT2.Connector.InfluxDB.Services
         public const string OrganizationVariable = "RIOT2_INFLUXDB_ORGANIZATION";
         public const string HandleCommandsVariable = "RIOT2_HANDLE_COMMANDS";
 
+        // Load sets the required values; it throws when one is missing, so they are never null.
         /// <summary>Unique id; also the MQTT client id.</summary>
-        public string Id { get; set; }
+        public string Id { get; set; } = null!;
 
-        public string InfluxHost { get; set; }
-        public string InfluxToken { get; set; }
-        public string InfluxBucket { get; set; }
-        public string InfluxOrganization { get; set; }
+        public string InfluxHost { get; set; } = null!;
+        public string InfluxToken { get; set; } = null!;
+        public string InfluxBucket { get; set; } = null!;
+        public string InfluxOrganization { get; set; } = null!;
 
         /// <summary>Also store commands (<c>riot2/node/+/command</c>), not only reports.</summary>
         public bool HandleCommands { get; set; }
@@ -37,7 +38,7 @@ namespace RIoT2.Connector.InfluxDB.Services
         /// Reads and validates the settings, and throws <see cref="ConfigurationValidationException"/>
         /// listing every problem (logged as critical) when any is missing or invalid.
         /// </summary>
-        public static InfluxConnectorOptions Load(IConfiguration configuration, ILogger logger = null)
+        public static InfluxConnectorOptions Load(IConfiguration configuration, ILogger? logger = null)
         {
             var settings = new SettingsReader(configuration);
             var options = new InfluxConnectorOptions

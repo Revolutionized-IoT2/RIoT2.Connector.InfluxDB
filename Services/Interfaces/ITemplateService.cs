@@ -7,7 +7,7 @@ namespace RIoT2.Connector.InfluxDB.Services.Interfaces
     {
         bool TemplatesLoaded { get; }
         Task LoadAsync(string orchestratorBaseUrl, CancellationToken cancellationToken = default);
-        TemplateSnapshot Snapshot { get; }
+        TemplateSnapshot? Snapshot { get; }
         List<Template> ReportTemplates { get; }
         List<Template> CommandTemplates { get; }
         List<Template> VariableTemplates { get; }

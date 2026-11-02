@@ -90,7 +90,7 @@ namespace RIoT2.Connector.InfluxDB.Services
                     try
                     {
                         var configurationCommand = Json.Deserialize<ConfigurationCommand>(mqttEventArgs.Message);
-                        await _templates.LoadAsync(configurationCommand.ApiBaseUrl);
+                        await _templates.LoadAsync(configurationCommand!.ApiBaseUrl);
                     }
                     catch (Exception x) 
                     {
@@ -132,7 +132,7 @@ namespace RIoT2.Connector.InfluxDB.Services
         }
 
         // Converts a message to a point and queues it for InfluxDB, counting the result.
-        private void Queue(string type, Func<PointData> convert)
+        private void Queue(string type, Func<PointData?> convert)
         {
             try
             {

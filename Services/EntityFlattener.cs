@@ -10,29 +10,29 @@ namespace RIoT2.Connector.InfluxDB.Services
     /// </summary>
     public static class EntityFlattener
     {
-        public static IEnumerable<(string Path, object Value)> Flatten(object entity, string prefix = "")
+        public static IEnumerable<(string Path, object Value)> Flatten(object? entity, string prefix = "")
         {
-            if (entity is IDictionary<string, object> dictionary)
+            if (entity is IDictionary<string, object?> dictionary)
             {
                 foreach (var kvp in dictionary)
                 {
                     var path = string.IsNullOrEmpty(prefix) ? kvp.Key : $"{prefix}.{kvp.Key}";
 
-                    if (kvp.Value is IDictionary<string, object>)
+                    if (kvp.Value is IDictionary<string, object?>)
                     {
                         foreach (var nested in Flatten(kvp.Value, path))
                             yield return nested;
                     }
                     else if (IsSupportedLeafValue(kvp.Value))
                     {
-                        yield return (path, kvp.Value);
+                        yield return (path, kvp.Value!);
                     }
                     //unsupported leaf types (string, null, arrays/lists) are skipped
                 }
             }
         }
 
-        private static bool IsSupportedLeafValue(object value)
+        private static bool IsSupportedLeafValue(object? value)
         {
             return value is bool
                 || value is int

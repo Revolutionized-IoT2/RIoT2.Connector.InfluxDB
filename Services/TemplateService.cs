@@ -8,11 +8,11 @@ namespace RIoT2.Connector.InfluxDB.Services
     {
         private readonly HttpClient _http;
         private readonly SemaphoreSlim _loadGate = new(1, 1);
-        private TemplateSnapshot _snapshot;
+        private TemplateSnapshot? _snapshot;
 
         public TemplateService(HttpClient http) => _http = http;
 
-        public TemplateSnapshot Snapshot => Volatile.Read(ref _snapshot);
+        public TemplateSnapshot? Snapshot => Volatile.Read(ref _snapshot);
         public bool TemplatesLoaded => Snapshot != null;
         public List<Template> ReportTemplates => Snapshot?.Reports.ToList() ?? [];
         public List<Template> CommandTemplates => Snapshot?.Commands.ToList() ?? [];

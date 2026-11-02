@@ -5,6 +5,13 @@ then builds and pushes the Docker image to GitHub Container Registry.
 
 ## [Unreleased]
 
+## [1.6.2] - 2026-11-02
+
+With RIoT2.Core 1.17.0. No port, user, volume, variable or JSON changes.
+
+- Build: nullable reference types ([I32](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/increments/phase-2.md#i32-nullable-reference-types-m)) are enabled, and CI fails on a nullable warning.
+  Serializer-populated models (`Models/`) turn off CS8618 in a nested `.editorconfig`. No behaviour
+  change.
 - Build: the threading analyzers ([I31](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/increments/phase-2.md#i31-async-cleanup-part-2-and-threading-analyzers-m)) run in every project from the shared
   `Directory.Build.props` and `.editorconfig`: a blocking wait, `async void` or an unobserved task
   fails the CI build. No change to the shipped binaries.

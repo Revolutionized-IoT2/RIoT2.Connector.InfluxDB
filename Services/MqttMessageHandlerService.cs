@@ -15,7 +15,7 @@ namespace RIoT2.Connector.InfluxDB.Services
             _templates = templates;
         }
 
-        public PointData HandleCommand(Command command)
+        public PointData? HandleCommand(Command command)
         {
             var snapshot = _templates.Snapshot;
             if (snapshot == null)
@@ -55,7 +55,7 @@ namespace RIoT2.Connector.InfluxDB.Services
             }
         }
 
-        public PointData HandleReport(Report report)
+        public PointData? HandleReport(Report report)
         {
             var snapshot = _templates.Snapshot;
             if (snapshot == null)
@@ -109,7 +109,7 @@ namespace RIoT2.Connector.InfluxDB.Services
             return number;
         }
 
-        private PointData BuildEntityPoint(string measurement, string message, string device, string node, string id, object entity, DateTime timestamp)
+        private PointData? BuildEntityPoint(string measurement, string message, string device, string node, string id, object? entity, DateTime timestamp)
         {
             var fields = EntityFlattener.Flatten(entity).ToList();
             if (!fields.Any())

@@ -76,7 +76,7 @@ dotnet run --project .\RIoT2.Connector.InfluxDB\RIoT2.Connector.InfluxDB.csproj
 - Only write boolean, numeric and entity boolean/numeric leaf values. Top-level text/text-array
   values and non-numeric entity leaves are skipped.
 - Keep the Core packages as package references, and only the narrow ones (plan M1 step 4): this
-  repository pins `RIoT2.Core.Contracts`, `RIoT2.Core.Mqtt` and `RIoT2.Core.Hosting` `1.14.1`. Don't
+  repository pins `RIoT2.Core.Contracts`, `RIoT2.Core.Mqtt` and `RIoT2.Core.Hosting` `1.17.0`. Don't
   add the `RIoT2.Core` facade or `RIoT2.Core.Node`.
 - Keep `PackageReference` items versionless; package versions belong in `Directory.Packages.props`.
 - Do not commit or document real InfluxDB tokens or MQTT credentials.
@@ -99,7 +99,7 @@ dotnet run --project .\RIoT2.Connector.InfluxDB\RIoT2.Connector.InfluxDB.csproj
   retried; shutdown can abandon queued or in-flight points.
 - The health endpoints only prove the ASP.NET Core process is running; they do not prove MQTT,
   template loading or InfluxDB delivery.
-- The Core packages `1.14.1` are published. Use `C:\Src\RIoT2\.localfeed` as an extra NuGet source only
+- The Core packages `1.17.0` are published. Use `C:\Src\RIoT2\.localfeed` as an extra NuGet source only
   to try an unreleased Core version.
 
 ## Related work
@@ -114,8 +114,8 @@ dotnet run --project .\RIoT2.Connector.InfluxDB\RIoT2.Connector.InfluxDB.csproj
 - [M7](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/plans/m07-contract-integration-tests.md):
   golden messages and in-process integration harness.
 - [M8](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/plans/m08-dotnet10-migration.md):
-  completed the `net10.0` target-framework migration; nullable and threading-analyzer practice
-  steps remain open.
+  completed the `net10.0` migration; nullable reference types (I32) and the threading analyzers
+  (I31) fail CI on a warning.
 - [Design 7.1](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/design/reliable-delivery.md):
   command API and delivery semantics that future bidirectional connectors should use.
 - [Design 7.3](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/design/connector-sdk.md):
