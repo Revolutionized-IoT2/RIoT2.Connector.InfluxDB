@@ -5,6 +5,23 @@ then builds and pushes the Docker image to GitHub Container Registry.
 
 ## [Unreleased]
 
+## [1.9.0] - 2026-11-02
+
+The disk spool ([I38](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/increments/phase-3-4.md#i38-connector-spool-m), [design 7.3](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/design/connector-sdk.md) phase 2), with
+RIoT2.Connector.Sdk 1.21.0. No port or user changes; the line protocol is unchanged.
+
+- Added: while InfluxDB is down, messages wait in `/app/Data/spool` and are written in order once it
+  answers, also after a restart. `RIOT2_CONNECTOR_SPOOL` (default `true`),
+  `RIOT2_CONNECTOR_SPOOL_MAX_MB` (100) and `RIOT2_CONNECTOR_SPOOL_MAX_AGE_DAYS` (7); beyond the limits
+  the oldest are dropped. Stopping spools what waits in memory.
+- Added: batches InfluxDB refuses go to `/app/Data/spool/dead-letter.jsonl` with the error.
+- Changed: `/health` reports MQTT, InfluxDB (`/ping`) and the spool, and answers 503 while MQTT is
+  disconnected. `/healthz` is unchanged.
+- Added: `riot2.connector.spool_depth`, `riot2.connector.spool_bytes`,
+  `riot2.connector.spool_dropped`.
+- Build: the image creates `/app/Data/spool` for the `app` user; mount `/app/Data` as a volume
+  (compose: `influxdb-connector-data`).
+
 ## [1.8.0] - 2026-11-02
 
 The connector SDK ([I37](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/increments/phase-3-4.md#i37-connector-sdk-m), [design 7.3](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/design/connector-sdk.md) phase 1),

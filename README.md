@@ -3,8 +3,8 @@
 InfluxDB 2 connector for the [RIoT2](https://github.com/Revolutionized-IoT2) platform. It listens
 to RIoT2 MQTT reports, optionally listens to commands, resolves template metadata from the
 orchestrator, and writes time-series points for Grafana and other InfluxDB consumers. It is the
-reference connector on the [connector SDK](https://github.com/Revolutionized-IoT2/RIoT2.Core/blob/main/Connector/README.md) (Core 1.20.0, [design 7.3](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/design/connector-sdk.md)): the SDK
-does the settings, MQTT, templates and queue; this repository has the InfluxDB sink.
+reference connector on the [connector SDK](https://github.com/Revolutionized-IoT2/RIoT2.Core/blob/main/Connector/README.md) (Core 1.21.0, [design 7.3](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/design/connector-sdk.md)): the SDK
+does the settings, MQTT, templates, queue and disk spool; this repository has the InfluxDB sink.
 
 - Type: ASP.NET Core service
 - Target framework: .NET 10
@@ -50,6 +50,9 @@ Set these variables:
 - `RIOT2_INFLUXDB_BUCKET`
 - `RIOT2_INFLUXDB_ORGANIZATION`
 - `RIOT2_HANDLE_COMMANDS` (optional, `true` enables command writes)
+- `RIOT2_CONNECTOR_SPOOL` (optional, default `true`), `RIOT2_CONNECTOR_SPOOL_MAX_MB` (optional,
+  default 100) and `RIOT2_CONNECTOR_SPOOL_MAX_AGE_DAYS` (optional, default 7): the disk spool, see
+  [Delivery behaviour](#delivery-behaviour)
 - `RIOT2_LOG_FORMAT` (optional, `text` or `json`) and `RIOT2_LOG_LEVEL` (optional, default
   `Information`)
 - `OTEL_EXPORTER_OTLP_ENDPOINT` (optional; the OTLP collector for metrics, such as
@@ -60,6 +63,7 @@ Logs go to the console and to `Logs/RIoT2.log` (`/app/Logs` in the container), r
 
 Metrics go out through `AddRIoT2Telemetry()` when the endpoint is set: `riot2.connector.messages`
 (by type and result), `riot2.connector.writes` (messages, by outcome), `riot2.connector.queue_depth`,
+`riot2.connector.spool_depth`, `riot2.connector.spool_bytes`, `riot2.connector.spool_dropped`,
 `riot2.mqtt.*`, ASP.NET Core and the runtime. Every name is in the
 [metrics contract](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/contracts/metrics.md).
 
@@ -101,11 +105,14 @@ docker run -d --restart=on-failure:5 `
   --env RIOT2_INFLUXDB_TOKEN=<influx-token> `
   --env RIOT2_INFLUXDB_BUCKET=riot-data `
   --env RIOT2_INFLUXDB_ORGANIZATION=riot-org `
+  --mount type=volume,source=riot2-influxdb-data,target=/app/Data `
   ghcr.io/revolutionized-iot2/riot2-influxdb:latest
 ```
 
-The image runs as the non-root `app` user and exposes `GET /health` and `GET /healthz`. Those
-endpoints confirm the process is running; they do not prove MQTT or InfluxDB delivery is healthy.
+The image runs as the non-root `app` user. Mount `/app/Data` so the spool survives a recreated
+container. `GET /health` reports MQTT, InfluxDB (its `/ping`) and the spool, and answers 503 while
+MQTT is disconnected; `GET /healthz` only confirms the process is running
+([http-api-services.md](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/contracts/http-api-services.md#influxdb-connector)).
 The Dockerfile uses `mcr.microsoft.com/dotnet/aspnet:10.0-alpine` for runtime and
 `mcr.microsoft.com/dotnet/sdk:10.0-alpine` for build.
 
@@ -135,24 +142,31 @@ it as `RIOT2_INFLUXDB_TOKEN`. For Grafana, follow the official documentation:
 
 ## Delivery behaviour
 
-The SDK queues each readable message as received (up to 1000) and hands `InfluxSink` batches of up
-to 100, in order, after at most 1 s. The sink maps them (`InfluxPointMapper`) and writes them with
-one InfluxDB client for the application lifetime.
+The SDK queues each readable message as received and hands `InfluxSink` batches of up to 100, in
+order, after at most 1 s. The sink maps them (`InfluxPointMapper`) and writes them with one
+InfluxDB client for the application lifetime.
 
-- InfluxDB down, slow, 401/403/404, 429 or 5xx: the batch is retried, 1 s doubling to 60 s, while
-  new messages wait; beyond 1000 they are refused (`riot2.connector.messages`, result `failed`).
-- 400, 413 or 422: InfluxDB refuses the data; the batch is dropped and logged.
+- InfluxDB down, slow, 401/403/404, 429 or 5xx: the batch is retried, 1 s doubling to 60 s. With
+  the spool (the default), the batch and everything waiting move to `/app/Data/spool`, new messages
+  follow them there, and all are written in order once InfluxDB answers, also after a restart.
+  Beyond `RIOT2_CONNECTOR_SPOOL_MAX_MB` or `RIOT2_CONNECTOR_SPOOL_MAX_AGE_DAYS` the oldest are
+  dropped (`riot2.connector.spool_dropped`). Without the spool, new messages wait in memory and
+  beyond 1000 are refused (`riot2.connector.messages`, result `failed`).
+- 400, 413 or 422: InfluxDB refuses the data; the batch goes to
+  `/app/Data/spool/dead-letter.jsonl` with the error (logged and dropped without the spool).
+- A message that can't be mapped is skipped and counted `ignored`; the rest of its batch is written.
 - Before the orchestrator's templates arrive, messages wait for them.
-- Stopping writes what is queued for up to 10 s and discards the rest.
-
-The disk spool and dead-letter file come next (design 7.3 phase 2, I38).
+- Stopping finishes the write in flight (up to 10 s) and spools what is left; without the spool it
+  writes what is queued for up to 10 s and discards the rest.
+- A batch interrupted by stopping is written again at the next start, so InfluxDB may get it twice;
+  the same point overwrites itself.
 
 ## Versions and releases
 
 - Release notes are in [CHANGELOG.md](CHANGELOG.md).
 - To release, push a tag `x.y.z` on `main`. The release workflow validates, then publishes the
   Docker image to GitHub Container Registry ([CI guide](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/guides/ci.md)).
-- This repository references `RIoT2.Connector.Sdk` `1.20.0` from GitHub Packages, which brings
+- This repository references `RIoT2.Connector.Sdk` `1.21.0` from GitHub Packages, which brings
   the contract, the MQTT client and the hosting, without the device SDK, the node runtime or Quartz.
 - [M8](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/plans/m08-dotnet10-migration.md)
   completed the target-framework migration; nullable reference types (I32) and the threading

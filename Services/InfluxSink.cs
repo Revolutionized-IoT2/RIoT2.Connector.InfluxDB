@@ -74,6 +74,20 @@ namespace RIoT2.Connector.InfluxDB.Services
             }
         }
 
+        /// <summary>InfluxDB's <c>/ping</c> (for <c>/health</c>); false when it doesn't answer.</summary>
+        public async Task<bool> CheckHealthAsync(CancellationToken cancellationToken)
+        {
+            try
+            {
+                return await _client.PingAsync().WaitAsync(cancellationToken);
+            }
+            catch (Exception error) when (!cancellationToken.IsCancellationRequested)
+            {
+                _logger.LogDebug(error, "InfluxDB ping failed");
+                return false;
+            }
+        }
+
         public void Dispose() => _client.Dispose();
     }
 }

@@ -12,8 +12,8 @@ An ASP.NET Core connector that writes RIoT2 reports (and optionally commands) to
 reference connector on the connector SDK (`RIoT2.Connector.Sdk` in RIoT2.Core,
 [design 7.3](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/design/connector-sdk.md),
 [SDK README](https://github.com/Revolutionized-IoT2/RIoT2.Core/blob/main/Connector/README.md)). The SDK
-does the settings, MQTT, the orchestrator's templates, the queue, batching, retry and metrics; this
-repository has the InfluxDB sink and its settings.
+does the settings, MQTT, the orchestrator's templates, the queue, the disk spool, batching, retry,
+health and metrics; this repository has the InfluxDB sink and its settings.
 
 ## Commands
 
@@ -44,10 +44,10 @@ dotnet run --project .\RIoT2.Connector.InfluxDB\RIoT2.Connector.InfluxDB.csproj
 |---|---|
 | `Program.cs` | `AddRIoT2Connector<InfluxSink, InfluxConnectorOptions>(...)` and `MapRIoT2Connector()` (SDK) |
 | `Services/InfluxConnectorOptions.cs` | The `RIOT2_INFLUXDB_*` settings; `Load` reads them with the SDK's shared settings, as the start does |
-| `Services/InfluxSink.cs` | `IConnectorSink`: maps a batch and writes it; InfluxDB's answers become retry or rejection |
+| `Services/InfluxSink.cs` | `IConnectorSink`: maps a batch and writes it; InfluxDB's answers become retry or rejection; `CheckHealthAsync` pings InfluxDB |
 | `Services/InfluxPointMapper.cs` | Report or command to an InfluxDB point |
 | `Services/EntityFlattener.cs` | Recursive entity field flattening |
-| `Dockerfile` | `net10.0` image, web port 8080; base images pinned by digest (Renovate updates them) |
+| `Dockerfile` | `net10.0` image, web port 8080, `/app/Data/spool` owned by `app`; base images pinned by digest (Renovate updates them) |
 
 ## Contracts consumed here
 
@@ -65,16 +65,17 @@ dotnet run --project .\RIoT2.Connector.InfluxDB\RIoT2.Connector.InfluxDB.csproj
 
 - Do not publish commands to MQTT from this connector. It is a sink; connectors that write back use
   the SDK's planned `IRiot2CommandClient` and `POST /api/v2/commands`.
-- Generic behaviour (queue, batching, retry, shutdown, MQTT, templates) belongs in the SDK, not
-  here. This repository maps and writes.
+- Generic behaviour (queue, spool, dead letters, batching, retry, shutdown, health, MQTT, templates)
+  belongs in the SDK, not here. This repository maps and writes.
 - The sink throws `TransientSinkException` for anything that may pass (network, timeouts, 401,
   403, 404, 429, 5xx, templates not loaded) and `SinkRejectedException` only when InfluxDB refuses
-  the data (400, 413, 422). A wrong exception type either loses data or stalls the queue.
+  the data (400, 413, 422). A wrong exception type either dead-letters good data or stalls the
+  queue.
 - The line protocol is a contract: RIoT2.Tests `GoldenInfluxTests` pins it for every golden message
   (`Golden/influx-line-protocol.txt`). Commands use `ConnectorMessage.ReceivedUtc`.
 - Only write boolean, numeric and entity boolean/numeric leaf values. Top-level text/text-array
   values and non-numeric entity leaves are skipped.
-- Reference Core only through `RIoT2.Connector.Sdk` (`1.20.0`, set in `Directory.Packages.props`);
+- Reference Core only through `RIoT2.Connector.Sdk` (`1.21.0`, set in `Directory.Packages.props`);
   don't add the `RIoT2.Core` facade or `RIoT2.Core.Node`. Keep `PackageReference` items versionless.
 - Do not commit or document real InfluxDB tokens or MQTT credentials.
 - Logging and metrics come from the SDK (`AddRIoT2Logging`, `AddRIoT2Telemetry`): don't add Serilog
@@ -85,15 +86,16 @@ dotnet run --project .\RIoT2.Connector.InfluxDB\RIoT2.Connector.InfluxDB.csproj
 - `RIOT2_HANDLE_COMMANDS` uses `bool.TryParse`; only values such as `true` enable command writes.
 - The connector announces itself as `InfluxDBConnector` with `NodeType` `Unknown`;
   `NodeType.Connector` comes with design 7.3 phase 3.
-- The queue holds 1000 messages in memory: a long outage refuses new ones, and a restart loses what
-  is queued, until the spool (design 7.3 phase 2, I38).
-- The health endpoints only prove the process is running; they don't check MQTT, the templates or
-  InfluxDB.
+- The spool (`/app/Data/spool`, on by default) is lost with the container unless `/app/Data` is a
+  volume; compose mounts `influxdb-connector-data`. Delivery from it is at least once: a batch
+  interrupted by stopping is written again, which InfluxDB treats as the same point.
+- `/health` answers 503 while MQTT is disconnected, so the Docker health check marks the container
+  unhealthy; a down InfluxDB only makes it `degraded`. `/healthz` only proves the process runs.
 
 ## Related work
 
-- [Backlog item 2](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/backlog/open-issues.md):
-  the remaining outage loss, fixed by the spool (I38).
+- [Backlog item 2](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/backlog/open-issues.md)
+  (outage loss) was closed by the spool (I38).
 - [M7](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/plans/m07-contract-integration-tests.md):
   golden messages; the connector isn't part of the end-to-end tests yet.
 - [Design 7.1](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/design/reliable-delivery.md):
