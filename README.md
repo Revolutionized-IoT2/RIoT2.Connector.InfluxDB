@@ -3,7 +3,7 @@
 InfluxDB 2 connector for the [RIoT2](https://github.com/Revolutionized-IoT2) platform. It listens
 to RIoT2 MQTT reports, optionally listens to commands, resolves template metadata from the
 orchestrator, and writes time-series points for Grafana and other InfluxDB consumers. It is the
-reference connector on the [connector SDK](https://github.com/Revolutionized-IoT2/RIoT2.Core/blob/main/Connector/README.md) (Core 1.22.0, [design 7.3](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/design/connector-sdk.md)): the SDK
+reference connector on the [connector SDK](https://github.com/Revolutionized-IoT2/RIoT2.Core/blob/main/Connector/README.md) (Core 2.0.0, [design 7.3](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/design/connector-sdk.md)): the SDK
 does the settings, MQTT, templates, queue and disk spool; this repository has the InfluxDB sink.
 
 - Type: ASP.NET Core service
@@ -168,7 +168,7 @@ InfluxDB client for the application lifetime.
 - Release notes are in [CHANGELOG.md](CHANGELOG.md).
 - To release, push a tag `x.y.z` on `main`. The release workflow validates, then publishes the
   Docker image to GitHub Container Registry ([CI guide](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/guides/ci.md)).
-- This repository references `RIoT2.Connector.Sdk` `1.22.0` from GitHub Packages, which brings
+- This repository references `RIoT2.Connector.Sdk` `2.0.0` from GitHub Packages, which brings
   the contract, the MQTT client and the hosting, without the device SDK, the node runtime or Quartz.
 - [M8](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/plans/m08-dotnet10-migration.md)
   completed the target-framework migration; nullable reference types (I32) and the threading

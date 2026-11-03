@@ -74,8 +74,8 @@ dotnet run --project .\RIoT2.Connector.InfluxDB\RIoT2.Connector.InfluxDB.csproj
   (`Golden/influx-line-protocol.txt`). Commands use `ConnectorMessage.ReceivedUtc`.
 - Only write boolean, numeric and entity boolean/numeric leaf values. Top-level text/text-array
   values and non-numeric entity leaves are skipped.
-- Reference Core only through `RIoT2.Connector.Sdk` (`1.22.0`, set in `Directory.Packages.props`);
-  don't add the `RIoT2.Core` facade or `RIoT2.Core.Node`. Keep `PackageReference` items versionless.
+- Reference Core only through `RIoT2.Connector.Sdk` (`2.0.0`, set in `Directory.Packages.props`);
+  don't add `RIoT2.Core.Node`. Keep `PackageReference` items versionless.
 - Do not commit or document real InfluxDB tokens or MQTT credentials.
 - Logging and metrics come from the SDK (`AddRIoT2Logging`, `AddRIoT2Telemetry`): don't add Serilog
   sinks, logging providers or `Logging` sections to `appsettings.json`.
